@@ -9,12 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
     "@radix-ui/react-dialog": "^1.1.5",
     "@radix-ui/react-popover": "^1.1.5",
     "date-fns": "^4.1.0",
     "html-to-image": "^1.11.11",
     "next": "15.1.6",
     "react": "^19.0.0",
+    "react-datepicker": "^8.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
