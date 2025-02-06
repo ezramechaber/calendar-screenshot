@@ -17,50 +17,48 @@ interface EventDialogProps {
 export default function EventDialog({ isOpen, onClose, event }: EventDialogProps) {
   const { selectedDate, addEvent, updateEvent, deleteEvent, calendarSettings } = useCalendarContext()
   
-  // Get initial colors
+  // Get colors for rendering - keep this outside useEffect since it's needed for UI
   const eventColors = getEventColor(calendarSettings.bgColor)
   
-  const [title, setTitle] = useState('')
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-  const [selectedColor, setSelectedColor] = useState('')  // Start empty
+  const [title, setTitle] = useState<string>('')
+  const [startDate, setStartDate] = useState<Date>(new Date())
+  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [selectedColor, setSelectedColor] = useState<string>(eventColors.colors[0])  // Initialize with first color
   const [isMultiDay, setIsMultiDay] = useState(false)
 
-  // Handle color initialization and updates
+  // Handle initialization and updates
   useEffect(() => {
     if (event) {
       setTitle(event.title)
       setStartDate(new Date(event.startDate))
       setEndDate(new Date(event.endDate))
-      setSelectedColor(event.color || eventColors.colors[0])
+      setSelectedColor(event.color ?? eventColors.colors[0])
       setIsMultiDay(event.startDate.toString() !== event.endDate.toString())
     } else {
       setTitle('')
-      setStartDate(selectedDate)
-      setEndDate(selectedDate)
+      setStartDate(selectedDate ?? new Date())
+      setEndDate(selectedDate ?? new Date())
       setSelectedColor(eventColors.colors[0])
       setIsMultiDay(false)
     }
-  }, [event, selectedDate, isOpen, eventColors.colors])
+  }, [event, selectedDate, isOpen, calendarSettings.bgColor])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!startDate) return
 
-    const eventData: Partial<Event> = {
-      title,
-      startDate,
+    const eventData: Event = {
+      title: title || '(No title)',
+      startDate: startDate,
       endDate: isMultiDay ? endDate : startDate,
       color: selectedColor,
+      id: event?.id || Date.now().toString(),
     }
 
     if (event) {
       updateEvent(event.id, eventData)
     } else {
-      addEvent({
-        id: Date.now().toString(),
-        ...eventData,
-      })
+      addEvent(eventData)
     }
     
     onClose()
