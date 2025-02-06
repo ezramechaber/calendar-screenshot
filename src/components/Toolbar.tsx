@@ -92,7 +92,7 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
   }
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[min(90%,600px)] bg-white shadow-lg border border-gray-200 rounded-t-lg">
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[min(95%,800px)] bg-white shadow-lg border border-gray-200 rounded-t-lg">
       <div className="px-6 py-4 flex items-center gap-8">
         <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
           <Switch
@@ -164,9 +164,22 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
         <div className="ml-auto">
           <button
             onClick={onDownload}
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+            className="px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
           >
-            Download PNG
+            <svg 
+              className="w-4 h-4" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="2" 
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            <span className="font-medium">Download</span>
           </button>
         </div>
       </div>

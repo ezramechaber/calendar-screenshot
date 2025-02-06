@@ -84,7 +84,7 @@ function CalendarContent() {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
       {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Calendar Shots</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Calendar Shots</h1>
 
       {/* Visible calendar with scaling */}
       <div 
