@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { createContext, useContext, useState, ReactNode } from 'react'
 import { Event } from '@/types'
 
@@ -26,7 +27,7 @@ interface CalendarContextType {
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined)
 
-export function CalendarProvider({ children }: { children: ReactNode }): JSX.Element {
+export function CalendarProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [events, setEvents] = useState<Event[]>([])

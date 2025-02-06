@@ -1,11 +1,14 @@
 'use client'
 
+import React from 'react'
 import { useState } from 'react'
 import { Switch } from '@headlessui/react'
 import { useCalendarContext } from '@/context/CalendarContext'
+import { toPng } from 'html-to-image'
 
 interface ToolbarProps {
   onDownload: () => void
+  onCopy: () => Promise<void>
 }
 
 function adjustColor(color: string, amount: number): string {
@@ -47,38 +50,38 @@ function generateGradient(baseColor: string): string {
   )`
 }
 
-export default function Toolbar({ onDownload }: ToolbarProps): JSX.Element {
+export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.ReactElement {
   const { calendarSettings, setCalendarSettings } = useCalendarContext()
   const [showToday, setShowToday] = useState(calendarSettings.showToday ?? true)
   const [isTransparent, setIsTransparent] = useState(calendarSettings.isTransparent ?? true)
   const [bgColor, setBgColor] = useState(calendarSettings.bgColor ?? '#ffffff')
   const [showShadow, setShowShadow] = useState(calendarSettings.showShadow ?? true)
 
-  const handleSettingChange = (
+  const handleSettingChange = <T extends boolean | string>(
     key: 'showToday' | 'isTransparent' | 'bgColor' | 'showShadow',
-    value: boolean | string
+    value: T
   ) => {
     switch (key) {
       case 'showToday':
         setShowToday(value as boolean)
-        setCalendarSettings({ [key]: value })
+        setCalendarSettings({ [key]: value as boolean })
         break
       case 'isTransparent':
         setIsTransparent(value as boolean)
-        setCalendarSettings({ [key]: value })
+        setCalendarSettings({ [key]: value as boolean })
         break
       case 'bgColor':
         setBgColor(value as string)
         setIsTransparent(false)
         setCalendarSettings({ 
-          bgColor: value,
+          bgColor: value as string,
           bgGradient: generateGradient(value as string),
           isTransparent: false
         })
         break
       case 'showShadow':
         setShowShadow(value as boolean)
-        setCalendarSettings({ [key]: value })
+        setCalendarSettings({ [key]: value as boolean })
         break
     }
   }
@@ -161,7 +164,26 @@ export default function Toolbar({ onDownload }: ToolbarProps): JSX.Element {
           <span className="text-sm text-gray-600 whitespace-nowrap">Shadow</span>
         </div>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={onCopy}
+            className="px-4 py-2.5 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <svg 
+              className="w-4 h-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="2" 
+                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+              />
+            </svg>
+            <span className="font-medium">Copy</span>
+          </button>
           <button
             onClick={onDownload}
             className="px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"

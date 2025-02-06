@@ -17,7 +17,7 @@ interface EventDisplayInfo {
   isEnd: boolean
 }
 
-export default function CalendarGrid(): JSX.Element {
+export default function CalendarGrid(): React.ReactElement {
   const { currentDate, setSelectedDate, events, deleteEvent, calendarSettings } = useCalendarContext()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
@@ -156,6 +156,7 @@ export default function CalendarGrid(): JSX.Element {
                         backgroundColor: eventColor,
                         color: isLightColor(eventColor) ? '#000000' : '#ffffff',
                         padding: '3px 8px',
+                        paddingRight: '20px',
                         gridColumn: `${columnStart} / span ${columnSpan}`,
                         zIndex: 10,
                         boxShadow: eventColors.boxShadow
@@ -165,13 +166,27 @@ export default function CalendarGrid(): JSX.Element {
                       <span className="block truncate">
                         {event.title || '(No title)'}
                       </span>
-                      <div className="hidden group-hover:flex absolute right-1 top-1/2 -translate-y-1/2 bg-white rounded shadow-sm">
+                      <div 
+                        className="opacity-0 group-hover:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 transition-opacity"
+                      >
                         <button
                           onClick={(e) => handleEventDelete(e, event.id)}
-                          className="p-0.5 min-w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100"
+                          className="p-0.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
                           title="Delete event"
                         >
-                          ×
+                          <svg 
+                            className="w-2.5 h-2.5 text-gray-600" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth="2" 
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -195,7 +210,8 @@ export default function CalendarGrid(): JSX.Element {
 }
 
 // Utility function to determine text color based on background
-function isLightColor(color: string): boolean {
+function isLightColor(color: string | undefined): boolean {
+  if (!color) return true
   const hex = color.replace('#', '')
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)

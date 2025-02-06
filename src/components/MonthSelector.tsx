@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { addMonths, subMonths } from 'date-fns'
 import { useCalendarContext } from '@/context/CalendarContext'
 
@@ -7,7 +8,7 @@ interface MonthSelectorProps {
   hideControls?: boolean
 }
 
-export default function MonthSelector({ hideControls = false }: MonthSelectorProps): JSX.Element {
+export default function MonthSelector({ hideControls = false }: MonthSelectorProps): React.ReactElement {
   const { currentDate, setCurrentDate } = useCalendarContext()
 
   const handlePrevMonth = () => {

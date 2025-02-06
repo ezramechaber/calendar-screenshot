@@ -3,10 +3,11 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useState, useEffect } from 'react'
 import { useCalendarContext } from '@/context/CalendarContext'
-import { format, addDays } from 'date-fns'
+import { format } from 'date-fns'
 import { Event } from '@/types'
 import { Switch } from '@/components/ui/switch'
-import { getEventColor, CALENDAR_COLORS } from '@/utils/colors'
+import { getEventColor } from '@/utils/colors'
+import React from 'react'
 
 interface EventDialogProps {
   isOpen: boolean
@@ -14,34 +15,48 @@ interface EventDialogProps {
   event?: Event | null
 }
 
+// At the top, add a default color
+const DEFAULT_COLOR = '#4F46E5'
+
 export default function EventDialog({ isOpen, onClose, event }: EventDialogProps) {
   const { selectedDate, addEvent, updateEvent, deleteEvent, calendarSettings } = useCalendarContext()
   
-  // Get colors for rendering - keep this outside useEffect since it's needed for UI
-  const eventColors = getEventColor(calendarSettings.bgColor)
+  // First, memoize eventColors to prevent unnecessary recalculations
+  const eventColors = React.useMemo(
+    () => getEventColor(calendarSettings.bgColor),
+    [calendarSettings.bgColor]
+  )
   
   const [title, setTitle] = useState<string>('')
   const [startDate, setStartDate] = useState<Date>(new Date())
   const [endDate, setEndDate] = useState<Date>(new Date())
-  const [selectedColor, setSelectedColor] = useState<string>(eventColors.colors[0])  // Initialize with first color
+  const [selectedColor, setSelectedColor] = useState<string>(eventColors.colors[0] ?? DEFAULT_COLOR)
   const [isMultiDay, setIsMultiDay] = useState(false)
 
-  // Handle initialization and updates
+  // First, extract the color selection logic
+  const getDefaultColor = React.useCallback(
+    (eventColor?: string) => eventColor ?? eventColors.colors[0] ?? DEFAULT_COLOR,
+    [eventColors.colors]
+  )
+
+  // Then update the useEffect
   useEffect(() => {
+    if (!isOpen) return
+
     if (event) {
       setTitle(event.title)
       setStartDate(new Date(event.startDate))
       setEndDate(new Date(event.endDate))
-      setSelectedColor(event.color ?? eventColors.colors[0])
+      setSelectedColor(getDefaultColor(event.color))
       setIsMultiDay(event.startDate.toString() !== event.endDate.toString())
     } else {
       setTitle('')
       setStartDate(selectedDate ?? new Date())
       setEndDate(selectedDate ?? new Date())
-      setSelectedColor(eventColors.colors[0])
+      setSelectedColor(getDefaultColor())
       setIsMultiDay(false)
     }
-  }, [event, selectedDate, isOpen, calendarSettings.bgColor])
+  }, [event, selectedDate, isOpen, getDefaultColor])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,10 +79,10 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
     onClose()
   }
 
-  const handleEventDelete = (e: React.MouseEvent, eventId: string) => {
-    e.stopPropagation()
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      deleteEvent(eventId)
+  const handleDelete = () => {
+    if (event && window.confirm('Are you sure you want to delete this event?')) {
+      deleteEvent(event.id)
+      onClose()
     }
   }
 
@@ -171,20 +186,36 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6">
-              <button 
-                type="button" 
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-md font-medium"
-              >
-                {event ? 'Update' : 'Save'}
-              </button>
+            <div className="flex justify-between mt-6">
+              <div>
+                {event && (
+                  <button 
+                    type="button"
+                    onClick={handleDelete}
+                    className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md font-medium flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={onClose}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-md font-medium"
+                >
+                  {event ? 'Update' : 'Save'}
+                </button>
+              </div>
             </div>
           </form>
         </Dialog.Content>

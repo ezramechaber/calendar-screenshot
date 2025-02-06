@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useRef, useState, useEffect } from 'react'
 import { toPng } from 'html-to-image'
 import CalendarGrid from './CalendarGrid'
@@ -8,7 +9,7 @@ import Toolbar from './Toolbar'
 import { CalendarProvider, useCalendarContext } from '@/context/CalendarContext'
 import { format, getDaysInMonth, startOfMonth } from 'date-fns'
 
-function CalendarContent(): JSX.Element {
+function CalendarContent(): React.ReactElement {
   const calendarRef = useRef<HTMLDivElement>(null)
   const exportRef = useRef<HTMLDivElement>(null)
   const { currentDate, calendarSettings } = useCalendarContext()
@@ -54,7 +55,7 @@ function CalendarContent(): JSX.Element {
           transform: 'none',
           transformOrigin: 'center',
         },
-        backgroundColor: calendarSettings.isTransparent ? null : '#ffffff'
+        ...(calendarSettings.isTransparent ? {} : { backgroundColor: '#ffffff' })
       })
       
       // Move it back off screen
@@ -66,6 +67,57 @@ function CalendarContent(): JSX.Element {
       link.download = `calendar-${format(currentDate, 'yyyy-MM')}.png`
       link.href = dataUrl
       link.click()
+    } catch (error) {
+      console.error('Error generating image:', error)
+    }
+  }
+
+  const handleCopy = async () => {
+    if (!exportRef.current) return
+
+    try {
+      const exportWrapper = exportRef.current
+      const actualHeight = exportWrapper.offsetHeight
+      
+      // Temporarily move the element on screen for capture
+      exportWrapper.style.left = '0'
+      exportWrapper.style.top = '0'
+      exportWrapper.style.zIndex = '9999'
+      
+      const dataUrl = await toPng(exportWrapper, {
+        quality: 1.0,
+        pixelRatio: 2,
+        width: 1124,
+        height: actualHeight,
+        style: {
+          transform: 'none',
+          transformOrigin: 'center',
+        },
+        ...(calendarSettings.isTransparent ? {} : { backgroundColor: '#ffffff' })
+      })
+      
+      // Move it back off screen
+      exportWrapper.style.left = '-9999px'
+      exportWrapper.style.top = '0'
+      exportWrapper.style.zIndex = 'auto'
+      
+      // Create a temporary image element
+      const img = document.createElement('img')
+      img.src = dataUrl
+      
+      // When the image loads, copy it to clipboard
+      img.onload = async () => {
+        try {
+          const blob = await fetch(dataUrl).then(res => res.blob())
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type]: blob
+            })
+          ])
+        } catch (err) {
+          console.error('Failed to copy to clipboard:', err)
+        }
+      }
     } catch (error) {
       console.error('Error generating image:', error)
     }
@@ -134,7 +186,7 @@ function CalendarContent(): JSX.Element {
 
       {/* Footer */}
       <div className="mt-8 text-sm text-gray-500">
-        Made by Ezra Mechaber
+        2025 | <a href="https://ezramechaber.com">Ezra Mechaber</a>
       </div>
 
       {/* Hidden export version */}
@@ -181,12 +233,12 @@ function CalendarContent(): JSX.Element {
         </div>
       </div>
 
-      <Toolbar onDownload={handleDownload} />
+      <Toolbar onDownload={handleDownload} onCopy={handleCopy} />
     </div>
   )
 }
 
-export default function Calendar(): JSX.Element {
+export default function Calendar(): React.ReactElement {
   return (
     <CalendarProvider>
       <CalendarContent />
