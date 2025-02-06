@@ -17,14 +17,6 @@ interface EventDisplayInfo {
   isEnd: boolean
 }
 
-const COLORS = [
-  '#E5E7EB', // Light gray
-  '#D1D5DB', // Medium gray
-  '#9CA3AF', // Dark gray
-  '#4B5563', // Darker gray
-  '#374151', // Almost black
-]
-
 export default function CalendarGrid(): JSX.Element {
   const { currentDate, setSelectedDate, events, deleteEvent, calendarSettings } = useCalendarContext()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -57,7 +49,7 @@ export default function CalendarGrid(): JSX.Element {
     }
   }
 
-  const getEventsForDate = (date: Date, weekStart: number, weekEnd: number): EventDisplayInfo[] => {
+  const getEventsForDate = (date: Date): EventDisplayInfo[] => {
     const dateEvents = events.filter(event => {
       const startDate = new Date(event.startDate)
       const endDate = new Date(event.endDate)
@@ -150,7 +142,7 @@ export default function CalendarGrid(): JSX.Element {
               {Array.from({ length: 7 }).map((_, dayIndex) => {
                 const dayNumber = weekIndex * 7 + dayIndex
                 const date = addDays(firstDayOfGrid, dayNumber)
-                const dateEvents = getEventsForDate(date, 0, 6)
+                const dateEvents = getEventsForDate(date)
                 
                 return dateEvents.slice(0, 3).map(({ event, columnSpan, columnStart }) => {
                   const eventColors = getEventColor(calendarSettings.bgColor)

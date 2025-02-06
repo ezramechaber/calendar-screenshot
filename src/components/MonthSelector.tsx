@@ -1,6 +1,6 @@
 'use client'
 
-import { format, addMonths, subMonths } from 'date-fns'
+import { addMonths, subMonths } from 'date-fns'
 import { useCalendarContext } from '@/context/CalendarContext'
 
 interface MonthSelectorProps {

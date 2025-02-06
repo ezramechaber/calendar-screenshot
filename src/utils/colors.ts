@@ -67,8 +67,8 @@ function generateComplementaryColors(baseColor: string): string[] {
       color && color.match(/^#[0-9A-F]{6}$/i) && 
       self.indexOf(color) === index
     )
-  } catch (e) {
-    // Fallback to monotone colors if conversion fails
+  } catch {
+    // Remove unused error parameter
     return [
       CALENDAR_COLORS.monotone.primary,
       ...CALENDAR_COLORS.monotone.variants.slice(0, 3)

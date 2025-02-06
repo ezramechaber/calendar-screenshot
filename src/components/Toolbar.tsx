@@ -102,7 +102,7 @@ export default function Toolbar({ onDownload }: ToolbarProps): JSX.Element {
               showToday ? 'bg-gray-900' : 'bg-gray-200'
             } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
           >
-            <span className="sr-only">Show today's date</span>
+            <span className="sr-only">Show today&apos;s date</span>
             <span
               className={`${
                 showToday ? 'translate-x-5' : 'translate-x-1'

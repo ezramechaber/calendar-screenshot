@@ -41,7 +41,7 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
       setSelectedColor(eventColors.colors[0])
       setIsMultiDay(false)
     }
-  }, [event, selectedDate, isOpen]) // Remove eventColors from dependencies
+  }, [event, selectedDate, isOpen, eventColors.colors])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
