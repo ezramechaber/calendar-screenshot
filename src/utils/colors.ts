@@ -68,7 +68,6 @@ function generateComplementaryColors(baseColor: string): string[] {
       self.indexOf(color) === index
     )
   } catch {
-    // Remove unused error parameter
     return [
       CALENDAR_COLORS.monotone.primary,
       ...CALENDAR_COLORS.monotone.variants.slice(0, 3)
