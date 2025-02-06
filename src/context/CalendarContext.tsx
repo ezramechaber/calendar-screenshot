@@ -3,6 +3,10 @@
 import React from 'react'
 import { createContext, useContext, useState, ReactNode } from 'react'
 import { Event } from '@/types'
+import { startOfDay } from 'date-fns'
+
+// Add the default color constant
+const DEFAULT_COLOR = '#4F46E5'
 
 interface CalendarSettings {
   showToday?: boolean
@@ -10,6 +14,11 @@ interface CalendarSettings {
   bgColor?: string
   bgGradient?: string
   showShadow?: boolean
+}
+
+export const ItemTypes = {
+  EVENT: 'event',
+  RESIZE_HANDLE: 'resize_handle'
 }
 
 interface CalendarContextType {
@@ -23,6 +32,13 @@ interface CalendarContextType {
   deleteEvent: (id: string) => void
   calendarSettings: CalendarSettings
   setCalendarSettings: (settings: Partial<CalendarSettings>) => void
+  isQuickCreating: boolean
+  setIsQuickCreating: (value: boolean) => void
+  quickCreateDate: Date | null
+  setQuickCreateDate: (date: Date | null) => void
+  handleQuickCreate: (title: string, date: Date) => void
+  moveEvent: (id: string, date: Date) => void
+  resizeEvent: (id: string, endDate: Date) => void
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined)
@@ -37,6 +53,8 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
     bgColor: '#ffffff',
     showShadow: true
   })
+  const [isQuickCreating, setIsQuickCreating] = useState(false)
+  const [quickCreateDate, setQuickCreateDate] = useState<Date | null>(null)
 
   const addEvent = (event: Event) => {
     const newEvent = {
@@ -68,6 +86,59 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
     setCalendarSettings(prev => ({ ...prev, ...newSettings }))
   }
 
+  const handleQuickCreate = (title: string, date: Date) => {
+    const eventData: Event = {
+      id: Date.now().toString(),
+      title: title || '(No title)',
+      startDate: date,
+      endDate: date,
+      color: DEFAULT_COLOR // We'll define this at the top of the file
+    }
+    addEvent(eventData)
+    setIsQuickCreating(false)
+    setQuickCreateDate(null)
+  }
+
+  const moveEvent = (id: string, toDate: Date) => {
+    setEvents(prev => prev.map(event => {
+      if (event.id !== id) return event
+      
+      const daysDiff = Math.floor(
+        (startOfDay(toDate).getTime() - startOfDay(event.startDate).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      
+      return {
+        ...event,
+        startDate: new Date(event.startDate.getTime() + daysDiff * 24 * 60 * 60 * 1000),
+        endDate: new Date(event.endDate.getTime() + daysDiff * 24 * 60 * 60 * 1000)
+      }
+    }))
+  }
+
+  const resizeEvent = (id: string, newEndDate: Date) => {
+    setEvents(prev => prev.map(event => {
+      if (event.id !== id) return event
+      
+      // Convert all dates to start of day for comparison
+      const startOfStartDate = startOfDay(event.startDate)
+      const startOfNewEndDate = startOfDay(newEndDate)
+      
+      // If trying to resize before start date, make it a single-day event
+      if (startOfNewEndDate.getTime() <= startOfStartDate.getTime()) {
+        return {
+          ...event,
+          endDate: new Date(startOfStartDate)
+        }
+      }
+      
+      // Otherwise set the new end date
+      return {
+        ...event,
+        endDate: startOfNewEndDate
+      }
+    }))
+  }
+
   return (
     <CalendarContext.Provider 
       value={{
@@ -81,6 +152,13 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
         deleteEvent,
         calendarSettings,
         setCalendarSettings: updateSettings,
+        isQuickCreating,
+        setIsQuickCreating,
+        quickCreateDate,
+        setQuickCreateDate,
+        handleQuickCreate,
+        moveEvent,
+        resizeEvent,
       }}
     >
       {children}
