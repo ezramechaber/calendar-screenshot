@@ -20,6 +20,7 @@ interface EventDisplayInfo {
   isEnd: boolean
   isStart: boolean
   isMiddle: boolean
+  rowIndex: number
 }
 
 interface DraggableEventProps {
@@ -29,7 +30,9 @@ interface DraggableEventProps {
   isStart: boolean
   isEnd: boolean
   isMiddle: boolean
+  date: Date
   onEventClick: (e: React.MouseEvent, event: Event) => void
+  style?: React.CSSProperties
 }
 
 function DraggableEvent({ 
@@ -39,11 +42,14 @@ function DraggableEvent({
   isStart,
   isEnd,
   isMiddle,
-  onEventClick 
+  date,
+  onEventClick,
+  style
 }: DraggableEventProps) {
-  const { handleEventDelete, calendarSettings, resizeEvent } = useCalendarContext()
+  const { deleteEvent, calendarSettings, resizeEvent } = useCalendarContext()
   const eventColors = getEventColor(calendarSettings.bgColor)
   const eventColor = event.color || eventColors.colors[0]
+  const [previewSpan, setPreviewSpan] = useState<number | null>(null)
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.EVENT,
@@ -58,21 +64,40 @@ function DraggableEvent({
     item: { id: event.id, type: ItemTypes.RESIZE_HANDLE },
     collect: (monitor) => ({
       isResizing: monitor.isDragging()
-    })
+    }),
+    hover: (item, monitor) => {
+      setPreviewSpan(columnSpan)
+    },
+    end: () => setPreviewSpan(null)
   }))
 
-  // Add drop handling for resize
   const [{ isOver }, drop] = useDrop(() => ({
     accept: ItemTypes.RESIZE_HANDLE,
-    drop: (item: { id: string, type: string }) => {
-      if (item.type === ItemTypes.RESIZE_HANDLE && item.id === event.id) {
-        resizeEvent(item.id, event.startDate)
+    drop: (item: { id: string, type: string }, monitor) => {
+      if (item.type === ItemTypes.RESIZE_HANDLE) {
+        const clientOffset = monitor.getClientOffset()
+        if (!clientOffset) return
+
+        const elements = document.elementsFromPoint(clientOffset.x, clientOffset.y)
+        const cellElement = elements.find(el => el.hasAttribute('data-date'))
+        
+        if (cellElement) {
+          const cellDate = new Date(cellElement.getAttribute('data-date') || '')
+          resizeEvent(item.id, cellDate)
+        }
       }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver()
     })
   }))
+
+  const handleEventDelete = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent event click
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      deleteEvent(event.id)
+    }
+  }
 
   return (
     <div
@@ -81,50 +106,70 @@ function DraggableEvent({
         drop(node)
       }}
       className={`relative text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis 
-        group transition-all hover:brightness-95 pointer-events-auto select-none 
+        group transition-opacity transition-colors duration-100 hover:opacity-90 pointer-events-auto select-none 
         cursor-grab active:cursor-grabbing h-6 ${isDragging ? 'opacity-50' : ''} 
-        ${isOver ? 'brightness-90' : ''} ${isStart && isEnd ? 'rounded-[4px]' : 
-        isStart ? 'rounded-l-[4px]' : 
-        isEnd ? 'rounded-r-[4px]' : ''}`}
+        ${isOver ? 'opacity-80' : ''}`}
       style={{
         backgroundColor: eventColor,
         color: isLightColor(eventColor) ? '#000000' : '#ffffff',
-        padding: '3px 8px',
-        paddingRight: '20px',
-        gridColumn: `${columnStart} / span ${columnSpan}`,
+        padding: '3px',
+        paddingLeft: isStart ? '5px' : '0',
+        paddingRight: isEnd ? '5px' : '0',
         zIndex: 10,
-        boxShadow: eventColors.boxShadow,
-        marginLeft: isStart ? '0' : '-1px',
-        marginRight: isEnd ? '0' : '-1px'
+        boxShadow: isStart || isEnd ? eventColors.boxShadow : 'none',
+        marginLeft: isStart ? '8px' : '-1px',
+        marginRight: isEnd ? '8px' : '-1px',
+        marginTop: '1px',
+        marginBottom: '1px',
+        borderTop: '1px solid rgba(0,0,0,0.1)',
+        borderBottom: '1px solid rgba(0,0,0,0.1)',
+        borderLeft: isStart ? '1px solid rgba(0,0,0,0.1)' : 'none',
+        borderRight: isEnd ? '1px solid rgba(0,0,0,0.1)' : 'none',
+        borderRadius: isStart && isEnd ? '4px' : 
+                     isStart ? '4px 0 0 4px' : 
+                     isEnd ? '0 4px 4px 0' : '0',
+        ...style
       }}
       onClick={(e) => onEventClick(e, event)}
     >
-      <span className="block truncate">
-        {event.title || '(No title)'}
-      </span>
+      {/* Only show title on first day */}
+      {isStart && (
+        <span className="block truncate">
+          {event.title || '(No title)'}
+        </span>
+      )}
+      {!isStart && (
+        <span className="block truncate opacity-0">
+          {event.title || '(No title)'}
+        </span>
+      )}
       
-      {/* Delete button */}
-      <div className="opacity-0 group-hover:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 transition-opacity">
-        <button
-          onClick={(e) => handleEventDelete(e, event.id)}
-          className="p-0.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
-          title="Delete event"
-        >
-          <svg className="w-2.5 h-2.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+      {/* Only show delete button on first day */}
+      {isStart && (
+        <div className="opacity-0 group-hover:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 transition-opacity">
+          <button
+            onClick={handleEventDelete}
+            className="p-0.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
+            title="Delete event"
+          >
+            <svg className="w-2.5 h-2.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
-      {/* Resize handle */}
-      <div
-        ref={resizeHandle}
-        className={`absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 
-          group-hover:opacity-100 hover:opacity-100 ${isResizing ? 'opacity-100' : ''}`}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="absolute right-0.5 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full bg-white/50" />
-      </div>
+      {/* Only show resize handle on last day */}
+      {isEnd && (
+        <div
+          ref={resizeHandle}
+          className={`absolute -right-2 top-0 bottom-0 w-4 cursor-ew-resize opacity-0 
+            group-hover:opacity-100 hover:opacity-100 ${isResizing ? 'opacity-100' : ''}`}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2 w-1 h-4 rounded-full bg-black/20 hover:bg-black/30 transition-colors" />
+        </div>
+      )}
     </div>
   )
 }
@@ -136,7 +181,7 @@ interface DroppableProps {
 }
 
 function DroppableDay({ date, children, onClick }: DroppableProps) {
-  const { moveEvent, resizeEvent, events } = useCalendarContext()
+  const { moveEvent, resizeEvent, events, calendarSettings } = useCalendarContext()
   
   // Count events on this day
   const eventCount = events.filter(event => {
@@ -173,16 +218,34 @@ function DroppableDay({ date, children, onClick }: DroppableProps) {
     })
   }))
 
+  const isCurrentMonth = date.getMonth() === new Date().getMonth()
+
   return (
     <div 
       ref={drop}
-      className={`min-h-[100px] relative cursor-pointer transition-colors 
+      data-date={date.toISOString()}
+      className={`min-h-[100px] relative cursor-pointer transition-colors border-r border-gray-100
         ${isOver && canDrop ? 'bg-gray-50' : ''}
         ${isOver && !canDrop ? 'bg-red-50' : ''}
         ${!isOver ? 'hover:bg-gray-50/80' : ''}`}
       onClick={onClick}
     >
-      {children}
+      <div className="bg-white min-h-[100px] relative">
+        <span className={`
+          absolute top-2 right-2 w-6 h-6 flex items-center justify-center
+          text-sm font-medium ${calendarSettings.showToday && isToday(date) 
+            ? 'bg-gray-900 text-white rounded-full' 
+            : 'text-gray-600'
+          }
+        `}>
+          {isCurrentMonth ? format(date, 'd') : ''}
+        </span>
+        
+        {/* Remove gap and handle spacing with event margins instead */}
+        <div className="absolute top-10 left-0 right-0 grid grid-rows-3 pointer-events-auto">
+          {children}
+        </div>
+      </div>
     </div>
   )
 }
@@ -230,61 +293,97 @@ export default function CalendarGrid(): React.ReactElement {
     }
   }
 
-  const getEventsForDate = (date: Date): EventDisplayInfo[] => {
-    const dateEvents = events.filter(event => {
+  const getEventsForDate = (date: Date, rowCache: Map<string, number> = new Map()): EventDisplayInfo[] => {
+    const dateKey = date.toISOString().split('T')[0]
+    
+    // First get any events that continue from previous days
+    const continuingEvents = events.filter(event => {
       const startDate = startOfDay(new Date(event.startDate))
       const endDate = startOfDay(new Date(event.endDate))
       const currentDate = startOfDay(new Date(date))
-      
-      // Only show events that either:
-      // 1. Start on this date, or
-      // 2. Continue from previous week and start at beginning of week
-      return startDate.getTime() === currentDate.getTime() || 
-             (currentDate.getDay() === 0 && // Beginning of week
-              currentDate >= startDate && 
-              currentDate <= endDate)
+      return currentDate > startDate && currentDate <= endDate
     })
 
-    // Sort events by duration and start date
-    dateEvents.sort((a, b) => {
+    // Then get events that start on this date
+    const newEvents = events.filter(event => {
+      const startDate = startOfDay(new Date(event.startDate))
+      const currentDate = startOfDay(new Date(date))
+      return startDate.getTime() === currentDate.getTime()
+    })
+
+    // Sort events
+    const sortEvents = (a: Event, b: Event) => {
       const aDuration = new Date(a.endDate).getTime() - new Date(a.startDate).getTime()
       const bDuration = new Date(b.endDate).getTime() - new Date(b.startDate).getTime()
-      if (aDuration !== bDuration) return bDuration - aDuration
+      if (bDuration !== aDuration) {
+        return bDuration - aDuration
+      }
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-    })
+    }
 
-    // Limit to 2 events per day
-    const limitedEvents = dateEvents.slice(0, 2)
+    continuingEvents.sort(sortEvents)
+    newEvents.sort(sortEvents)
 
-    return limitedEvents.map(event => {
-      const startDate = startOfDay(new Date(event.startDate))
-      const endDate = startOfDay(new Date(event.endDate))
-      const currentDate = startOfDay(new Date(date))
-      
-      const dayOfWeek = date.getDay()
-      const daysUntilWeekEnd = 6 - dayOfWeek
-      const daysUntilEventEnd = Math.floor((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))
-      
-      // Calculate span for this week segment
-      const span = Math.min(daysUntilWeekEnd + 1, daysUntilEventEnd + 1)
-      
-      // Determine if this is start, middle, or end of event
-      const isStart = startDate.getTime() === currentDate.getTime()
-      // Check if this is either the actual end date OR the last visible day of a continuing event
-      const isEnd = endDate.getTime() === currentDate.getTime() || 
-                   (currentDate.getTime() + (span - 1) * 24 * 60 * 60 * 1000 === endDate.getTime())
-      const isMiddle = !isStart && !isEnd
-      
-      return {
-        event,
-        columnSpan: span,
-        columnStart: dayOfWeek + 1,
-        isLastOfWeek: dayOfWeek + span - 1 === 6,
-        isEnd,
-        isStart,
-        isMiddle
+    const result: EventDisplayInfo[] = []
+    const usedRows: { [key: number]: boolean } = {}
+
+    // Helper to find first available row
+    const findFirstAvailableRow = () => {
+      let rowIndex = 0
+      while (usedRows[rowIndex]) {
+        rowIndex++
+      }
+      return rowIndex
+    }
+
+    // Place all events, prioritizing cached positions
+    [...continuingEvents, ...newEvents].forEach(event => {
+      if (result.length < 2) {
+        let rowIndex: number
+        
+        // If this event has a cached position AND that row is available, use it
+        if (rowCache.has(event.id) && !usedRows[rowCache.get(event.id)!]) {
+          rowIndex = rowCache.get(event.id)!
+        } else {
+          // Otherwise, find the first available row
+          rowIndex = findFirstAvailableRow()
+          rowCache.set(event.id, rowIndex)
+        }
+
+        usedRows[rowIndex] = true
+        result.push(createEventDisplayInfo(event, date, rowIndex))
       }
     })
+
+    return result
+  }
+
+  // Helper function to create EventDisplayInfo
+  const createEventDisplayInfo = (event: Event, date: Date, rowIndex: number): EventDisplayInfo => {
+    const startDate = startOfDay(new Date(event.startDate))
+    const endDate = startOfDay(new Date(event.endDate))
+    const currentDate = startOfDay(new Date(date))
+    
+    const dayOfWeek = date.getDay()
+    const daysUntilWeekEnd = 6 - dayOfWeek
+    const daysUntilEventEnd = Math.floor((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    const span = Math.min(daysUntilWeekEnd + 1, daysUntilEventEnd + 1)
+    
+    const isStart = startDate.getTime() === currentDate.getTime()
+    const isEnd = endDate.getTime() === currentDate.getTime()
+    const isMiddle = !isStart && !isEnd
+
+    return {
+      event,
+      columnSpan: 1,
+      columnStart: 1,
+      isLastOfWeek: dayOfWeek === 6,
+      isEnd,
+      isStart,
+      isMiddle,
+      rowIndex
+    }
   }
 
   const weeks = Math.ceil((startDay + daysInMonth) / 7)
@@ -309,70 +408,64 @@ export default function CalendarGrid(): React.ReactElement {
           </div>
         ))}
         
-        {/* Weeks */}
-        {Array.from({ length: weeks }).map((_, weekIndex) => (
-          <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative">
-            {/* Days in week */}
-            {Array.from({ length: 7 }).map((_, dayIndex) => {
-              const dayNumber = weekIndex * 7 + dayIndex
-              const date = addDays(firstDayOfGrid, dayNumber)
-              const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-              const isQuickCreateCell = isQuickCreating && 
-                quickCreateDate?.toDateString() === date.toDateString()
-              
-              return (
-                <DroppableDay
-                  key={dayIndex}
-                  date={date}
-                  onClick={() => handleCellClick(date)}
-                >
-                  <span className={`
-                    absolute top-2 left-2 w-6 h-6 flex items-center justify-center
-                    text-sm font-medium ${calendarSettings.showToday && isToday(date) 
-                      ? 'bg-gray-900 text-white rounded-full' 
-                      : 'text-gray-600'
-                    }
-                  `}>
-                    {isCurrentMonth ? format(date, 'd') : ''}
-                  </span>
-                  
-                  {isQuickCreateCell && (
-                    <QuickCreateEvent 
-                      date={date}
-                      onSave={handleQuickCreate}
-                      onCancel={() => {
-                        setIsQuickCreating(false)
-                        setQuickCreateDate(null)
-                      }}
-                    />
-                  )}
-                </DroppableDay>
-              )
-            })}
-
-            {/* Events for this week */}
-            <div className="absolute top-10 left-0 right-0 grid grid-cols-7 gap-px pointer-events-none">
+        {/* Calendar cells */}
+        {Array.from({ length: weeks }).map((_, weekIndex) => {
+          const weekStart = addDays(firstDayOfGrid, weekIndex * 7)
+          
+          return (
+            <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative">
               {Array.from({ length: 7 }).map((_, dayIndex) => {
                 const dayNumber = weekIndex * 7 + dayIndex
                 const date = addDays(firstDayOfGrid, dayNumber)
+                const isCurrentMonth = date.getMonth() === currentDate.getMonth()
+                const isQuickCreateCell = isQuickCreating && 
+                  quickCreateDate?.toDateString() === date.toDateString()
+                
+                // Get events for this specific day
                 const dateEvents = getEventsForDate(date)
                 
-                return dateEvents.slice(0, 3).map(({ event, columnSpan, columnStart, isStart, isEnd, isMiddle }) => (
-                  <DraggableEvent
-                    key={event.id}
-                    event={event}
-                    columnStart={columnStart}
-                    columnSpan={columnSpan}
-                    isStart={isStart}
-                    isEnd={isEnd}
-                    isMiddle={isMiddle}
-                    onEventClick={handleEventClick}
-                  />
-                ))
+                return (
+                  <DroppableDay
+                    key={dayIndex}
+                    date={date}
+                    onClick={() => handleCellClick(date)}
+                  >
+                    {/* Render both events and QuickCreateEvent */}
+                    {dateEvents.map(({ event, isStart, isEnd, isMiddle, rowIndex }) => (
+                      <DraggableEvent
+                        key={event.id}
+                        event={event}
+                        columnStart={1}
+                        columnSpan={1}
+                        isStart={isStart}
+                        isEnd={isEnd}
+                        isMiddle={isMiddle}
+                        date={date}
+                        onEventClick={handleEventClick}
+                        style={{
+                          gridRow: rowIndex + 1
+                        }}
+                      />
+                    ))}
+                    {isQuickCreateCell && (
+                      <QuickCreateEvent 
+                        date={date}
+                        onSave={handleQuickCreate}
+                        onCancel={() => {
+                          setIsQuickCreating(false)
+                          setQuickCreateDate(null)
+                        }}
+                        style={{
+                          gridRow: dateEvents.length + 1 // Place after existing events
+                        }}
+                      />
+                    )}
+                  </DroppableDay>
+                )
               })}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <EventDialog 
         isOpen={isDialogOpen} 
@@ -401,13 +494,18 @@ function isLightColor(color: string | undefined): boolean {
 function QuickCreateEvent({ 
   date, 
   onSave, 
-  onCancel 
+  onCancel,
+  style
 }: { 
   date: Date
   onSave: (title: string, date: Date) => void
   onCancel: () => void
+  style?: React.CSSProperties
 }) {
   const [title, setTitle] = useState('')
+  const { calendarSettings } = useCalendarContext()
+  const eventColors = getEventColor(calendarSettings.bgColor)
+  const eventColor = eventColors.colors[0]
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -417,7 +515,6 @@ function QuickCreateEvent({
     }
   }
 
-  // Focus input on mount
   useEffect(() => {
     const timer = setTimeout(() => {
       const input = document.getElementById('quick-create-input')
@@ -428,18 +525,39 @@ function QuickCreateEvent({
 
   return (
     <div 
-      className="absolute left-0 right-0 top-6 mx-2 z-20"
+      className="h-6"
+      style={style}
       onClick={e => e.stopPropagation()}
     >
-      <input
-        id="quick-create-input"
-        className="w-full p-2 text-sm border border-gray-200 rounded shadow-sm bg-white"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => onSave(title, date)}
-        placeholder="Event title"
-      />
+      <div 
+        className="h-6 rounded-[4px] relative"
+        style={{
+          backgroundColor: eventColor,
+          boxShadow: eventColors.boxShadow,
+          marginLeft: '2px',
+          marginRight: '2px'
+        }}
+      >
+        <input
+          id="quick-create-input"
+          className="w-full h-full bg-transparent focus:outline-none
+            text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+          style={{
+            padding: '3px',
+            paddingLeft: '5px',
+            paddingRight: '5px',
+            color: isLightColor(eventColor) ? '#000000' : '#ffffff',
+            '::placeholder': {
+              color: isLightColor(eventColor) ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)'
+            }
+          }}
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => onSave(title, date)}
+          placeholder="Event title"
+        />
+      </div>
     </div>
   )
 } 

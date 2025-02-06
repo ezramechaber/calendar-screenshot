@@ -4,6 +4,7 @@ import React from 'react'
 import { createContext, useContext, useState, ReactNode } from 'react'
 import { Event } from '@/types'
 import { startOfDay } from 'date-fns'
+import { getEventColor } from '@/utils/colors'
 
 // Add the default color constant
 const DEFAULT_COLOR = '#4F46E5'
@@ -87,12 +88,13 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
   }
 
   const handleQuickCreate = (title: string, date: Date) => {
+    const eventColors = getEventColor(calendarSettings.bgColor)
     const eventData: Event = {
       id: Date.now().toString(),
       title: title || '(No title)',
       startDate: date,
       endDate: date,
-      color: DEFAULT_COLOR // We'll define this at the top of the file
+      color: eventColors.colors[0]  // Use the first color from the event colors
     }
     addEvent(eventData)
     setIsQuickCreating(false)
@@ -116,27 +118,26 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
   }
 
   const resizeEvent = (id: string, newEndDate: Date) => {
-    setEvents(prev => prev.map(event => {
-      if (event.id !== id) return event
-      
-      // Convert all dates to start of day for comparison
-      const startOfStartDate = startOfDay(event.startDate)
-      const startOfNewEndDate = startOfDay(newEndDate)
-      
-      // If trying to resize before start date, make it a single-day event
-      if (startOfNewEndDate.getTime() <= startOfStartDate.getTime()) {
+    setEvents(prev => {
+      return prev.map(event => {
+        if (event.id !== id) return event
+        
+        const startOfStartDate = startOfDay(event.startDate)
+        const startOfNewEndDate = startOfDay(newEndDate)
+        
+        if (startOfNewEndDate.getTime() <= startOfStartDate.getTime()) {
+          return {
+            ...event,
+            endDate: new Date(startOfStartDate)
+          }
+        }
+        
         return {
           ...event,
-          endDate: new Date(startOfStartDate)
+          endDate: startOfNewEndDate
         }
-      }
-      
-      // Otherwise set the new end date
-      return {
-        ...event,
-        endDate: startOfNewEndDate
-      }
-    }))
+      })
+    })
   }
 
   return (
