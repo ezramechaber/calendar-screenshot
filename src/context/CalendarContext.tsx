@@ -32,7 +32,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<Event[]>([])
   const [calendarSettings, setCalendarSettings] = useState<CalendarSettings>({
     showToday: true,
-    isTransparent: false,
+    isTransparent: true,
     bgColor: '#ffffff',
     showShadow: true
   })

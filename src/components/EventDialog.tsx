@@ -6,8 +6,7 @@ import { useCalendarContext } from '@/context/CalendarContext'
 import { format, addDays } from 'date-fns'
 import { Event } from '@/types'
 import { Switch } from '@/components/ui/switch'
-
-const COLORS = ['#FF5733', '#33FF57', '#3357FF', '#FF33F5', '#FFB533']
+import { getEventColor, CALENDAR_COLORS } from '@/utils/colors'
 
 interface EventDialogProps {
   isOpen: boolean
@@ -16,28 +15,33 @@ interface EventDialogProps {
 }
 
 export default function EventDialog({ isOpen, onClose, event }: EventDialogProps) {
-  const { selectedDate, addEvent, updateEvent } = useCalendarContext()
+  const { selectedDate, addEvent, updateEvent, calendarSettings } = useCalendarContext()
+  
+  // Get initial colors
+  const eventColors = getEventColor(calendarSettings.bgColor)
+  
   const [title, setTitle] = useState('')
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
-  const [color, setColor] = useState(COLORS[0])
+  const [selectedColor, setSelectedColor] = useState('')  // Start empty
   const [isMultiDay, setIsMultiDay] = useState(false)
 
+  // Handle color initialization and updates
   useEffect(() => {
     if (event) {
       setTitle(event.title)
       setStartDate(new Date(event.startDate))
       setEndDate(new Date(event.endDate))
-      setColor(event.color)
+      setSelectedColor(event.color || eventColors.colors[0])
       setIsMultiDay(event.startDate.toString() !== event.endDate.toString())
-    } else if (selectedDate) {
+    } else {
       setTitle('')
       setStartDate(selectedDate)
       setEndDate(selectedDate)
-      setColor(COLORS[0])
+      setSelectedColor(eventColors.colors[0])
       setIsMultiDay(false)
     }
-  }, [event, selectedDate, isOpen])
+  }, [event, selectedDate, isOpen]) // Remove eventColors from dependencies
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,7 +51,7 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
       title,
       startDate,
       endDate: isMultiDay ? endDate : startDate,
-      color,
+      color: selectedColor,
     }
 
     if (event) {
@@ -66,7 +70,7 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 animate-fadeIn" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md bg-white rounded-md p-6 animate-contentShow">
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl shadow-xl p-6 animate-contentShow">
           <Dialog.Title className="text-lg font-semibold mb-4">
             {event ? 'Edit Event' : 'Add Event'}
           </Dialog.Title>
@@ -139,18 +143,23 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
                 <span className="text-sm text-gray-600">Multi-day event</span>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="mt-4 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
                   Color
                 </label>
-                <div className="flex gap-2">
-                  {COLORS.map((c) => (
+                <div className="flex items-center gap-3">
+                  {eventColors.colors.map(color => (
                     <button
-                      key={c}
+                      key={color}
                       type="button"
-                      className={`w-6 h-6 rounded-full ${c === color ? 'ring-2 ring-black ring-offset-2' : ''}`}
-                      style={{ backgroundColor: c }}
-                      onClick={() => setColor(c)}
+                      className={`w-5 h-5 rounded-full transition-all ring-offset-2 ${
+                        selectedColor === color ? 'ring-2 ring-gray-900 scale-110' : ''
+                      }`}
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
+                      }}
+                      onClick={() => setSelectedColor(color)}
                     />
                   ))}
                 </div>

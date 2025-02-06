@@ -48,11 +48,11 @@ function generateGradient(baseColor: string): string {
 }
 
 export default function Toolbar({ onDownload }: ToolbarProps) {
-  const [showToday, setShowToday] = useState(true)
-  const [isTransparent, setIsTransparent] = useState(false)
-  const [bgColor, setBgColor] = useState('#ffffff')
-  const [showShadow, setShowShadow] = useState(true)
-  const { setCalendarSettings } = useCalendarContext()
+  const { calendarSettings, setCalendarSettings } = useCalendarContext()
+  const [showToday, setShowToday] = useState(calendarSettings.showToday ?? true)
+  const [isTransparent, setIsTransparent] = useState(calendarSettings.isTransparent ?? true)
+  const [bgColor, setBgColor] = useState(calendarSettings.bgColor ?? '#ffffff')
+  const [showShadow, setShowShadow] = useState(calendarSettings.showShadow ?? true)
 
   const handleSettingChange = (
     key: 'showToday' | 'isTransparent' | 'bgColor' | 'showShadow',
@@ -160,4 +160,4 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
       </div>
     </div>
   )
-} 
+}

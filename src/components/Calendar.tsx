@@ -6,7 +6,7 @@ import CalendarGrid from './CalendarGrid'
 import MonthSelector from './MonthSelector'
 import Toolbar from './Toolbar'
 import { CalendarProvider, useCalendarContext } from '@/context/CalendarContext'
-import { format } from 'date-fns'
+import { format, getDaysInMonth, startOfMonth } from 'date-fns'
 
 function CalendarContent() {
   const calendarRef = useRef<HTMLDivElement>(null)
@@ -38,6 +38,7 @@ function CalendarContent() {
 
     try {
       const exportWrapper = exportRef.current
+      const actualHeight = exportWrapper.offsetHeight
       
       // Temporarily move the element on screen for capture
       exportWrapper.style.left = '0'
@@ -48,7 +49,7 @@ function CalendarContent() {
         quality: 1.0,
         pixelRatio: 2,
         width: 1124,
-        height: 724,
+        height: actualHeight,
         style: {
           transform: 'none',
           transformOrigin: 'center',
@@ -70,6 +71,16 @@ function CalendarContent() {
     }
   }
 
+  // Calculate if we need 6 rows
+  const monthStart = startOfMonth(currentDate)
+  const startDay = monthStart.getDay()
+  const daysInMonth = getDaysInMonth(currentDate)
+  const needsSixRows = Math.ceil((startDay + daysInMonth) / 7) > 5
+
+  // Base and extended heights
+  const baseHeight = 624
+  const sixRowHeight = 720  // Increased height for 6 rows
+
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
       {/* Visible calendar with scaling */}
@@ -86,25 +97,26 @@ function CalendarContent() {
           className="relative"
           style={{ 
             width: 1024,
-            height: 624,
+            height: needsSixRows ? sixRowHeight : baseHeight,
             transform: `scale(${scale})`,
             transformOrigin: 'top center'
           }}
         >
           <div 
             ref={calendarRef} 
-            className={`w-full rounded-xl border border-gray-200 p-6 bg-white ${
+            className={`w-full rounded-xl border border-gray-100 p-6 bg-white/95 backdrop-blur-sm ${
               calendarSettings.showShadow ? 'shadow-xl' : ''
             }`}
             style={{
               display: 'flex',
               flexDirection: 'column',
-              height: '624px'
+              aspectRatio: '1.64',
+              height: 'auto'
             }}
           >
             <div className="relative flex items-center justify-center mb-8">
-              <h1 className="text-2xl font-medium tracking-tight absolute">
-                {format(currentDate, 'MMMM yyyy')}
+              <h1 className="text-2xl font-medium tracking-tight absolute text-gray-800">
+                {format(currentDate, 'MMMM yyyy').toUpperCase()}
               </h1>
               <div className="ml-auto">
                 <MonthSelector />
@@ -125,36 +137,38 @@ function CalendarContent() {
           position: 'fixed',
           left: '-9999px',
           top: 0,
-          width: 1124,
-          height: 724,
-          padding: '50px',
+          width: 1124,  // 1024 + (50px * 2) padding
+          minHeight: 724,  // Minimum height
           background: calendarSettings.isTransparent 
             ? 'transparent' 
             : (calendarSettings.bgGradient || calendarSettings.bgColor || '#ffffff'),
           overflow: 'hidden'
         }}
       >
-        <div 
-          className={`w-full rounded-xl border border-gray-200 p-6 bg-white ${
-            calendarSettings.showShadow ? 'shadow-xl' : ''
-          }`}
-          style={{
-            width: '1024px',
-            height: '624px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          <div className="relative flex items-center justify-center mb-8">
-            <h1 className="text-2xl font-medium tracking-tight absolute">
-              {format(currentDate, 'MMMM yyyy')}
-            </h1>
-            <div className="ml-auto">
-              <MonthSelector />
+        <div className="p-[50px] flex">
+          <div 
+            className={`w-full rounded-xl border border-gray-200 p-6 bg-white ${
+              calendarSettings.showShadow ? 'shadow-xl' : ''
+            }`}
+            style={{
+              width: '1024px',
+              display: 'flex',
+              flexDirection: 'column',
+              aspectRatio: '1.64',
+              height: 'auto'
+            }}
+          >
+            <div className="relative flex items-center justify-center mb-8">
+              <h1 className="text-2xl font-medium tracking-tight absolute text-gray-800">
+                {format(currentDate, 'MMMM yyyy').toUpperCase()}
+              </h1>
+              <div className="ml-auto">
+                <MonthSelector />
+              </div>
             </div>
-          </div>
-          <div className="flex-1">
-            <CalendarGrid />
+            <div className="flex-1">
+              <CalendarGrid />
+            </div>
           </div>
         </div>
       </div>
