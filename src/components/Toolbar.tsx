@@ -38,14 +38,14 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
 
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[min(90%,600px)] bg-white shadow-lg border border-gray-200 rounded-t-lg">
-      <div className="px-4 py-3 flex items-center gap-6">
-        <div className="flex items-center gap-2">
+      <div className="px-6 py-4 flex items-center gap-8">
+        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
           <Switch
             checked={showToday}
             onChange={(checked) => handleSettingChange('showToday', checked)}
             className={`${
               showToday ? 'bg-gray-900' : 'bg-gray-200'
-            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors`}
+            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
           >
             <span className="sr-only">Show today's date</span>
             <span
@@ -54,16 +54,16 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
               } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
-          <span className="text-sm text-gray-600">Show today</span>
+          <span className="text-sm text-gray-600 whitespace-nowrap">Show today</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
           <Switch
             checked={isTransparent}
             onChange={(checked) => handleSettingChange('isTransparent', checked)}
             className={`${
               isTransparent ? 'bg-gray-900' : 'bg-gray-200'
-            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors`}
+            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
           >
             <span className="sr-only">Make background transparent</span>
             <span
@@ -72,27 +72,27 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
               } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
-          <span className="text-sm text-gray-600">Transparent</span>
+          <span className="text-sm text-gray-600 whitespace-nowrap">Transparent</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
           <input
             type="color"
             value={bgColor}
             onChange={(e) => handleSettingChange('bgColor', e.target.value)}
-            className="w-8 h-8 rounded border border-gray-200 cursor-pointer"
+            className="w-8 h-8 rounded border border-gray-200 cursor-pointer flex-shrink-0"
             disabled={isTransparent}
           />
-          <span className="text-sm text-gray-600">Background</span>
+          <span className="text-sm text-gray-600 whitespace-nowrap">Background</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
           <Switch
             checked={showShadow}
             onChange={(checked) => handleSettingChange('showShadow', checked)}
             className={`${
               showShadow ? 'bg-gray-900' : 'bg-gray-200'
-            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors`}
+            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
           >
             <span className="sr-only">Show drop shadow</span>
             <span
@@ -101,13 +101,13 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
               } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
-          <span className="text-sm text-gray-600">Shadow</span>
+          <span className="text-sm text-gray-600 whitespace-nowrap">Shadow</span>
         </div>
 
         <div className="ml-auto">
           <button
             onClick={onDownload}
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
           >
             Download PNG
           </button>

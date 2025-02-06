@@ -33,6 +33,9 @@ export default function CalendarGrid() {
   const daysInMonth = getDaysInMonth(currentDate)
   const startDay = monthStart.getDay()
   
+  // At the top level, calculate the first day to show in the calendar
+  const firstDayOfGrid = addDays(monthStart, -startDay)
+  
   const handleCellClick = (date: Date) => {
     setSelectedDate(date)
     setSelectedEvent(null)
@@ -59,12 +62,12 @@ export default function CalendarGrid() {
       const endDate = new Date(event.endDate)
       const currentDate = new Date(date)
       
-      // Reset time portion for accurate date comparison
       startDate.setHours(0, 0, 0, 0)
       endDate.setHours(0, 0, 0, 0)
       currentDate.setHours(0, 0, 0, 0)
       
-      return currentDate >= startDate && currentDate <= endDate
+      // Only return events that start on this date
+      return startDate.getTime() === currentDate.getTime()
     })
 
     return dateEvents.map(event => {
@@ -73,12 +76,19 @@ export default function CalendarGrid() {
       startDate.setHours(0, 0, 0, 0)
       endDate.setHours(0, 0, 0, 0)
 
+      const dayOfWeek = date.getDay()
+      const daysUntilWeekEnd = 6 - dayOfWeek
+      const daysUntilEventEnd = Math.floor((endDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+      
+      // Calculate how many days this event should span (limited by week boundary)
+      const span = Math.min(daysUntilWeekEnd + 1, daysUntilEventEnd + 1)
+
       return {
         event,
-        isStart: startDate.getTime() === date.getTime(),
-        isEnd: endDate.getTime() === date.getTime(),
-        isFirstOfWeek: date.getDay() === weekStart,
-        isLastOfWeek: date.getDay() === weekEnd
+        columnSpan: span,
+        columnStart: dayOfWeek + 1, // Add 1 because grid columns start at 1
+        isLastOfWeek: dayOfWeek + span - 1 === 6,
+        isEnd: endDate.getTime() === date.getTime()
       }
     })
   }
@@ -87,7 +97,7 @@ export default function CalendarGrid() {
 
   return (
     <>
-      <div className="grid grid-cols-7 gap-px bg-gray-100 rounded-lg p-px aspect-[6/4] w-full max-w-[1000px] mx-auto overflow-hidden">
+      <div className="grid grid-cols-7 grid-rows-[auto_repeat(5,1fr)] gap-px bg-gray-100 rounded-lg p-px w-full h-full">
         {/* Days of week header */}
         {DAYS_OF_WEEK.map(day => (
           <div 
@@ -98,29 +108,19 @@ export default function CalendarGrid() {
           </div>
         ))}
         
-        {/* Calendar grid */}
+        {/* Weeks */}
         {Array.from({ length: weeks }).map((_, weekIndex) => (
-          <div key={weekIndex} className="contents">
+          <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative">
+            {/* Days in week */}
             {Array.from({ length: 7 }).map((_, dayIndex) => {
-              const dayNumber = weekIndex * 7 + dayIndex - startDay
-              const date = addDays(monthStart, dayNumber)
+              const dayNumber = weekIndex * 7 + dayIndex
+              const date = addDays(firstDayOfGrid, dayNumber)
               const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-              
-              if (!isCurrentMonth) {
-                return (
-                  <div 
-                    key={dayIndex}
-                    className="p-2 bg-white min-h-[100px]"
-                  />
-                )
-              }
-
-              const dateEvents = getEventsForDate(date, 0, 6)
               
               return (
                 <div 
                   key={dayIndex}
-                  className="p-2 bg-white min-h-[100px] relative cursor-pointer transition-colors hover:bg-gray-50"
+                  className="p-2 bg-white relative cursor-pointer transition-colors hover:bg-gray-50"
                   onClick={() => handleCellClick(date)}
                 >
                   <span className={`
@@ -130,47 +130,48 @@ export default function CalendarGrid() {
                       : 'text-gray-600'
                     }
                   `}>
-                    {format(date, 'd')}
+                    {isCurrentMonth ? format(date, 'd') : ''}
                   </span>
-                  
-                  <div className="mt-8 flex flex-col gap-1">
-                    {dateEvents.slice(0, 3).map(({ event, isStart, isEnd, isFirstOfWeek, isLastOfWeek }) => (
-                      <div
-                        key={event.id}
-                        className={`
-                          relative text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis group
-                          ${isStart || isFirstOfWeek ? 'ml-2' : '-ml-2'}
-                          ${isEnd || isLastOfWeek ? 'mr-2' : '-mr-2'}
-                        `}
-                        style={{
-                          backgroundColor: event.color,
-                          color: isLightColor(event.color) ? 'black' : 'white',
-                          padding: '3px 8px',
-                          borderRadius: `${isStart || isFirstOfWeek ? '4px' : '0'} ${isEnd || isLastOfWeek ? '4px' : '0'} ${isEnd || isLastOfWeek ? '4px' : '0'} ${isStart || isFirstOfWeek ? '4px' : '0'}`,
-                          zIndex: 10
-                        }}
-                        onClick={(e) => handleEventClick(e, event)}
-                      >
-                        {(isStart || isFirstOfWeek) && (
-                          <span className="block truncate">
-                            {event.title || '(No title)'}
-                          </span>
-                        )}
-                        <div className="hidden group-hover:flex absolute right-1 top-1/2 -translate-y-1/2 bg-white rounded shadow-sm">
-                          <button
-                            onClick={(e) => handleEventDelete(e, event.id)}
-                            className="p-0.5 min-w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100"
-                            title="Delete event"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )
             })}
+
+            {/* Events for this week */}
+            <div className="absolute top-8 left-0 right-0 grid grid-cols-7 gap-px">
+              {Array.from({ length: 7 }).map((_, dayIndex) => {
+                const dayNumber = weekIndex * 7 + dayIndex
+                const date = addDays(firstDayOfGrid, dayNumber)
+                const dateEvents = getEventsForDate(date, 0, 6)
+                
+                return dateEvents.slice(0, 3).map(({ event, columnSpan, columnStart }) => (
+                  <div
+                    key={event.id}
+                    className="relative text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis group rounded-[4px]"
+                    style={{
+                      backgroundColor: event.color,
+                      color: isLightColor(event.color) ? 'black' : 'white',
+                      padding: '3px 8px',
+                      gridColumn: `${columnStart} / span ${columnSpan}`,
+                      zIndex: 10
+                    }}
+                    onClick={(e) => handleEventClick(e, event)}
+                  >
+                    <span className="block truncate">
+                      {event.title || '(No title)'}
+                    </span>
+                    <div className="hidden group-hover:flex absolute right-1 top-1/2 -translate-y-1/2 bg-white rounded shadow-sm">
+                      <button
+                        onClick={(e) => handleEventDelete(e, event.id)}
+                        className="p-0.5 min-w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100"
+                        title="Delete event"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))
+              })}
+            </div>
           </div>
         ))}
       </div>

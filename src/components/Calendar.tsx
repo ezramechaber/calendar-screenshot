@@ -10,13 +10,22 @@ import { format } from 'date-fns'
 
 function CalendarContent() {
   const calendarRef = useRef<HTMLDivElement>(null)
+  const exportRef = useRef<HTMLDivElement>(null)
   const { currentDate, calendarSettings } = useCalendarContext()
   const [scale, setScale] = useState(1)
 
   useEffect(() => {
     const updateScale = () => {
-      const totalPadding = 112 // 32 + 32 + 24 + 24
-      setScale(Math.min(1, (window.innerWidth - totalPadding) / 1024))
+      // Use a more gradual scaling approach
+      const containerPadding = 64  // 32px on each side
+      const minScale = 0.7        // Don't let it get smaller than 70%
+      
+      // Calculate scale based on available width
+      const availableWidth = window.innerWidth - containerPadding
+      // Make the scaling more gradual by adjusting the base width
+      const scale = Math.min(1, Math.max(minScale, availableWidth / 1200))
+      
+      setScale(scale)
     }
 
     updateScale()
@@ -25,16 +34,35 @@ function CalendarContent() {
   }, [])
 
   const handleDownload = async () => {
-    if (!calendarRef.current) return
+    if (!exportRef.current) return
 
     try {
-      const dataUrl = await toPng(calendarRef.current, {
+      const exportWrapper = exportRef.current
+      
+      // Temporarily move the element on screen for capture
+      exportWrapper.style.left = '0'
+      exportWrapper.style.top = '0'
+      exportWrapper.style.zIndex = '9999'
+      
+      const dataUrl = await toPng(exportWrapper, {
         quality: 1.0,
         pixelRatio: 2,
+        width: 1124,
+        height: 724,
+        style: {
+          transform: 'none',
+          transformOrigin: 'center',
+        },
+        backgroundColor: calendarSettings.isTransparent ? null : '#ffffff'
       })
       
+      // Move it back off screen
+      exportWrapper.style.left = '-9999px'
+      exportWrapper.style.top = '0'
+      exportWrapper.style.zIndex = 'auto'
+      
       const link = document.createElement('a')
-      link.download = 'calendar.png'
+      link.download = `calendar-${format(currentDate, 'yyyy-MM')}.png`
       link.href = dataUrl
       link.click()
     } catch (error) {
@@ -43,12 +71,13 @@ function CalendarContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center p-4 md:p-8 pb-28">
+    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
+      {/* Visible calendar with scaling */}
       <div 
         className="relative"
         style={{ 
           width: 1024,
-          height: Math.max(600, 1024 * scale),
+          height: 624,
           transform: `scale(${scale})`,
           transformOrigin: 'top center'
         }}
@@ -58,16 +87,66 @@ function CalendarContent() {
           className={`w-full bg-white rounded-xl border border-gray-200 p-6 ${
             calendarSettings.showShadow ? 'shadow-xl' : ''
           }`}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '624px'
+          }}
         >
-          <div className="flex items-start justify-between mb-8">
-            <h1 className="text-2xl font-medium tracking-tight">
+          <div className="relative flex items-center justify-center mb-8">
+            <h1 className="text-2xl font-medium tracking-tight absolute">
               {format(currentDate, 'MMMM yyyy')}
             </h1>
-            <MonthSelector />
+            <div className="ml-auto">
+              <MonthSelector />
+            </div>
           </div>
-          <CalendarGrid />
+          <div className="flex-1">
+            <CalendarGrid />
+          </div>
         </div>
       </div>
+
+      {/* Hidden export version */}
+      <div 
+        ref={exportRef}
+        className="fixed"
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: 1124,
+          height: 724,
+          padding: '50px',
+          backgroundColor: calendarSettings.isTransparent ? 'transparent' : '#ffffff',
+          overflow: 'hidden'
+        }}
+      >
+        <div 
+          className={`w-full bg-white rounded-xl border border-gray-200 p-6 ${
+            calendarSettings.showShadow ? 'shadow-xl' : ''
+          }`}
+          style={{
+            width: '1024px',
+            height: '624px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <div className="relative flex items-center justify-center mb-8">
+            <h1 className="text-2xl font-medium tracking-tight absolute">
+              {format(currentDate, 'MMMM yyyy')}
+            </h1>
+            <div className="ml-auto">
+              <MonthSelector />
+            </div>
+          </div>
+          <div className="flex-1">
+            <CalendarGrid />
+          </div>
+        </div>
+      </div>
+
       <Toolbar onDownload={handleDownload} />
     </div>
   )

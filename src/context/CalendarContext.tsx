@@ -7,6 +7,7 @@ interface CalendarSettings {
   showToday?: boolean
   isTransparent?: boolean
   bgColor?: string
+  showShadow?: boolean
 }
 
 interface CalendarContextType {
@@ -31,7 +32,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [calendarSettings, setCalendarSettings] = useState<CalendarSettings>({
     showToday: true,
     isTransparent: false,
-    bgColor: '#ffffff'
+    bgColor: '#ffffff',
+    showShadow: true
   })
 
   const addEvent = (event: Event) => {
