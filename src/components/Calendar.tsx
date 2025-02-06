@@ -74,35 +74,45 @@ function CalendarContent() {
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
       {/* Visible calendar with scaling */}
       <div 
-        className="relative"
+        className="relative p-12 rounded-2xl"
         style={{ 
-          width: 1024,
-          height: 624,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center'
+          width: 1124, // 1024 + 100px padding
+          background: calendarSettings.isTransparent 
+            ? 'transparent' 
+            : (calendarSettings.bgGradient || calendarSettings.bgColor || '#ffffff')
         }}
       >
         <div 
-          ref={calendarRef} 
-          className={`w-full bg-white rounded-xl border border-gray-200 p-6 ${
-            calendarSettings.showShadow ? 'shadow-xl' : ''
-          }`}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '624px'
+          className="relative"
+          style={{ 
+            width: 1024,
+            height: 624,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top center'
           }}
         >
-          <div className="relative flex items-center justify-center mb-8">
-            <h1 className="text-2xl font-medium tracking-tight absolute">
-              {format(currentDate, 'MMMM yyyy')}
-            </h1>
-            <div className="ml-auto">
-              <MonthSelector />
+          <div 
+            ref={calendarRef} 
+            className={`w-full rounded-xl border border-gray-200 p-6 bg-white ${
+              calendarSettings.showShadow ? 'shadow-xl' : ''
+            }`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '624px'
+            }}
+          >
+            <div className="relative flex items-center justify-center mb-8">
+              <h1 className="text-2xl font-medium tracking-tight absolute">
+                {format(currentDate, 'MMMM yyyy')}
+              </h1>
+              <div className="ml-auto">
+                <MonthSelector />
+              </div>
             </div>
-          </div>
-          <div className="flex-1">
-            <CalendarGrid />
+            <div className="flex-1">
+              <CalendarGrid />
+            </div>
           </div>
         </div>
       </div>
@@ -118,12 +128,14 @@ function CalendarContent() {
           width: 1124,
           height: 724,
           padding: '50px',
-          backgroundColor: calendarSettings.isTransparent ? 'transparent' : '#ffffff',
+          background: calendarSettings.isTransparent 
+            ? 'transparent' 
+            : (calendarSettings.bgGradient || calendarSettings.bgColor || '#ffffff'),
           overflow: 'hidden'
         }}
       >
         <div 
-          className={`w-full bg-white rounded-xl border border-gray-200 p-6 ${
+          className={`w-full rounded-xl border border-gray-200 p-6 bg-white ${
             calendarSettings.showShadow ? 'shadow-xl' : ''
           }`}
           style={{

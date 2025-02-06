@@ -8,6 +8,45 @@ interface ToolbarProps {
   onDownload: () => void
 }
 
+function adjustColor(color: string, amount: number): string {
+  // Remove the # if present
+  const hex = color.replace('#', '')
+  
+  // Convert to RGB - fix the substring indices
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+  
+  // Adjust each component with a percentage instead of flat amount
+  const factor = 1 + (amount / 100)
+  const newR = Math.min(255, Math.max(0, Math.round(r * factor)))
+  const newG = Math.min(255, Math.max(0, Math.round(g * factor)))
+  const newB = Math.min(255, Math.max(0, Math.round(b * factor)))
+  
+  const rHex = newR.toString(16).padStart(2, '0')
+  const gHex = newG.toString(16).padStart(2, '0')
+  const bHex = newB.toString(16).padStart(2, '0')
+  
+  return `#${rHex}${gHex}${bHex}`
+}
+
+function generateGradient(baseColor: string): string {
+  // Generate more dramatic shades
+  const lighterColor = adjustColor(baseColor, 30)    // 30% lighter
+  const darkerColor = adjustColor(baseColor, -30)    // 30% darker
+  const evenLighter = adjustColor(baseColor, 45)     // 45% lighter
+  const evenDarker = adjustColor(baseColor, -45)     // 45% darker
+  const angle = Math.floor(Math.random() * 360)
+  
+  return `linear-gradient(${angle}deg, 
+    ${evenDarker}, 
+    ${darkerColor} 25%, 
+    ${baseColor} 50%, 
+    ${lighterColor} 75%, 
+    ${evenLighter}
+  )`
+}
+
 export default function Toolbar({ onDownload }: ToolbarProps) {
   const [showToday, setShowToday] = useState(true)
   const [isTransparent, setIsTransparent] = useState(false)
@@ -22,18 +61,24 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
     switch (key) {
       case 'showToday':
         setShowToday(value as boolean)
+        setCalendarSettings({ [key]: value })
         break
       case 'isTransparent':
         setIsTransparent(value as boolean)
+        setCalendarSettings({ [key]: value })
         break
       case 'bgColor':
         setBgColor(value as string)
+        setCalendarSettings({ 
+          bgColor: value,
+          bgGradient: generateGradient(value as string)
+        })
         break
       case 'showShadow':
         setShowShadow(value as boolean)
+        setCalendarSettings({ [key]: value })
         break
     }
-    setCalendarSettings({ [key]: value })
   }
 
   return (

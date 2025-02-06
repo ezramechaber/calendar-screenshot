@@ -7,6 +7,7 @@ interface CalendarSettings {
   showToday?: boolean
   isTransparent?: boolean
   bgColor?: string
+  bgGradient?: string
   showShadow?: boolean
 }
 
