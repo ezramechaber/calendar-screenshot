@@ -26,7 +26,7 @@ interface CalendarContextType {
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined)
 
-export function CalendarProvider({ children }: { children: ReactNode }) {
+export function CalendarProvider({ children }: { children: ReactNode }): JSX.Element {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [events, setEvents] = useState<Event[]>([])
@@ -87,7 +87,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useCalendarContext() {
+export function useCalendarContext(): CalendarContextType {
   const context = useContext(CalendarContext)
   if (context === undefined) {
     throw new Error('useCalendarContext must be used within a CalendarProvider')

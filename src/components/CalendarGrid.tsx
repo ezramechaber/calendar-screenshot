@@ -11,10 +11,10 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 interface EventDisplayInfo {
   event: Event
-  isStart: boolean
-  isEnd: boolean
-  isFirstOfWeek: boolean
+  columnSpan: number
+  columnStart: number
   isLastOfWeek: boolean
+  isEnd: boolean
 }
 
 const COLORS = [
@@ -25,7 +25,7 @@ const COLORS = [
   '#374151', // Almost black
 ]
 
-export default function CalendarGrid() {
+export default function CalendarGrid(): JSX.Element {
   const { currentDate, setSelectedDate, events, deleteEvent, calendarSettings } = useCalendarContext()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
@@ -57,7 +57,7 @@ export default function CalendarGrid() {
     }
   }
 
-  const getEventsForDate = (date: Date, weekStart: number, weekEnd: number) => {
+  const getEventsForDate = (date: Date, weekStart: number, weekEnd: number): EventDisplayInfo[] => {
     const dateEvents = events.filter(event => {
       const startDate = new Date(event.startDate)
       const endDate = new Date(event.endDate)

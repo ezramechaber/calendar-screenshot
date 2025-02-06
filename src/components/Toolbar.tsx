@@ -47,7 +47,7 @@ function generateGradient(baseColor: string): string {
   )`
 }
 
-export default function Toolbar({ onDownload }: ToolbarProps) {
+export default function Toolbar({ onDownload }: ToolbarProps): JSX.Element {
   const { calendarSettings, setCalendarSettings } = useCalendarContext()
   const [showToday, setShowToday] = useState(calendarSettings.showToday ?? true)
   const [isTransparent, setIsTransparent] = useState(calendarSettings.isTransparent ?? true)

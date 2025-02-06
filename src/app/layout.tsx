@@ -16,7 +16,7 @@ export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
-}) {
+}): JSX.Element {
   return (
     <html lang="en" className={`${inter.variable} font-sans`}>
       <body className="bg-gray-50 text-gray-900 antialiased">

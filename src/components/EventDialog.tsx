@@ -15,7 +15,7 @@ interface EventDialogProps {
 }
 
 export default function EventDialog({ isOpen, onClose, event }: EventDialogProps) {
-  const { selectedDate, addEvent, updateEvent, calendarSettings } = useCalendarContext()
+  const { selectedDate, addEvent, updateEvent, deleteEvent, calendarSettings } = useCalendarContext()
   
   // Get initial colors
   const eventColors = getEventColor(calendarSettings.bgColor)
@@ -47,7 +47,7 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
     e.preventDefault()
     if (!startDate) return
 
-    const eventData = {
+    const eventData: Partial<Event> = {
       title,
       startDate,
       endDate: isMultiDay ? endDate : startDate,
@@ -64,6 +64,13 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
     }
     
     onClose()
+  }
+
+  const handleEventDelete = (e: React.MouseEvent, eventId: string) => {
+    e.stopPropagation()
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      deleteEvent(eventId)
+    }
   }
 
   return (

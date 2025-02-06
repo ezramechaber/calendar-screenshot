@@ -8,7 +8,7 @@ import Toolbar from './Toolbar'
 import { CalendarProvider, useCalendarContext } from '@/context/CalendarContext'
 import { format, getDaysInMonth, startOfMonth } from 'date-fns'
 
-function CalendarContent() {
+function CalendarContent(): JSX.Element {
   const calendarRef = useRef<HTMLDivElement>(null)
   const exportRef = useRef<HTMLDivElement>(null)
   const { currentDate, calendarSettings } = useCalendarContext()
@@ -186,7 +186,7 @@ function CalendarContent() {
   )
 }
 
-export default function Calendar() {
+export default function Calendar(): JSX.Element {
   return (
     <CalendarProvider>
       <CalendarContent />

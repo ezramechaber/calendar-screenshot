@@ -7,7 +7,7 @@ interface MonthSelectorProps {
   hideControls?: boolean
 }
 
-export default function MonthSelector({ hideControls = false }: MonthSelectorProps) {
+export default function MonthSelector({ hideControls = false }: MonthSelectorProps): JSX.Element {
   const { currentDate, setCurrentDate } = useCalendarContext()
 
   const handlePrevMonth = () => {
