@@ -69,15 +69,25 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
         break
       case 'bgColor':
         setBgColor(value as string)
+        setIsTransparent(false)
         setCalendarSettings({ 
           bgColor: value,
-          bgGradient: generateGradient(value as string)
+          bgGradient: generateGradient(value as string),
+          isTransparent: false
         })
         break
       case 'showShadow':
         setShowShadow(value as boolean)
         setCalendarSettings({ [key]: value })
         break
+    }
+  }
+
+  const handleColorClick = () => {
+    // If transparent is on, turn it off first
+    if (isTransparent) {
+      setIsTransparent(false)
+      setCalendarSettings({ isTransparent: false })
     }
   }
 
@@ -125,8 +135,10 @@ export default function Toolbar({ onDownload }: ToolbarProps) {
             type="color"
             value={bgColor}
             onChange={(e) => handleSettingChange('bgColor', e.target.value)}
-            className="w-8 h-8 rounded border border-gray-200 cursor-pointer flex-shrink-0"
-            disabled={isTransparent}
+            onClick={handleColorClick}
+            className={`w-8 h-8 rounded border border-gray-200 cursor-pointer flex-shrink-0 ${
+              isTransparent ? 'opacity-50' : ''
+            }`}
           />
           <span className="text-sm text-gray-600 whitespace-nowrap">Background</span>
         </div>

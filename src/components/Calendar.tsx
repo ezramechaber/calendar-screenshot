@@ -83,11 +83,14 @@ function CalendarContent() {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
+      {/* Title */}
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Calendar Shots</h1>
+
       {/* Visible calendar with scaling */}
       <div 
         className="relative p-12 rounded-2xl"
         style={{ 
-          width: 1124, // 1024 + 100px padding
+          width: 1124,
           background: calendarSettings.isTransparent 
             ? 'transparent' 
             : (calendarSettings.bgGradient || calendarSettings.bgColor || '#ffffff')
@@ -129,6 +132,11 @@ function CalendarContent() {
         </div>
       </div>
 
+      {/* Footer */}
+      <div className="mt-8 text-sm text-gray-500">
+        Made by Ezra Mechaber
+      </div>
+
       {/* Hidden export version */}
       <div 
         ref={exportRef}
@@ -163,7 +171,7 @@ function CalendarContent() {
                 {format(currentDate, 'MMMM yyyy').toUpperCase()}
               </h1>
               <div className="ml-auto">
-                <MonthSelector />
+                <MonthSelector hideControls={true} />
               </div>
             </div>
             <div className="flex-1">
