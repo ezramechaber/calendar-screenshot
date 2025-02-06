@@ -4,7 +4,6 @@ import React from 'react'
 import { useState } from 'react'
 import { Switch } from '@headlessui/react'
 import { useCalendarContext } from '@/context/CalendarContext'
-import { toPng } from 'html-to-image'
 
 interface ToolbarProps {
   onDownload: () => void
