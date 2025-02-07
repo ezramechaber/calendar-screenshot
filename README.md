@@ -36,22 +36,20 @@ src/
 ## To Do
 
 ### Design Polish
-- [ ] Improve event styles
-- [ ] Add hover states
+- [ ] Improve drag and drop (ghost image)
 - [ ] Refine spacing and typography
-- [ ] Add loading states
+- [ ] Unify styles, make them fancier
 - [ ] Improve mobile layout
 
 ### Dark Mode
 - [ ] Add theme toggle
 - [ ] Create dark color palette
 - [ ] Handle background colors in dark mode
-- [ ] Persist theme preference
+- [ ] Persist theme preference in local storage
 
 ### Enhanced Screenshots
-- [ ] Add template options
-- [ ] Support custom dimensions
-- [ ] Add watermark options
+- [ ] Refine export method
+- [ ] Additional themes/fonts/alignment
 - [ ] Improve export quality
 - [ ] Add more background styles
 

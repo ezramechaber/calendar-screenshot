@@ -6,14 +6,23 @@ import { useCalendarContext } from '@/context/CalendarContext'
 import { ClipboardCopy, Download} from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 
-const BACKGROUND_OPTIONS = [
+// First, define the type for our background options
+type BackgroundOption = {
+  id: string;
+  name: string;
+  color: string | null;
+  angle?: number;
+}
+
+// Then define our constant with the type
+const BACKGROUND_OPTIONS: BackgroundOption[] = [
   { id: 'transparent', name: 'Transparent', color: null },
   { id: 'blue', name: 'Blue', color: '#3B82F6', angle: 45 },
   { id: 'purple', name: 'Purple', color: '#8B5CF6', angle: 135 },
   { id: 'red', name: 'Red', color: '#EF4444', angle: 225 },
   { id: 'green', name: 'Green', color: '#10B981', angle: 315 },
   { id: 'orange', name: 'Orange', color: '#F59E0B', angle: 180 },
-]
+] as const;
 
 interface ToolbarProps {
   onDownload: () => void
@@ -77,12 +86,12 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
     }
   }
 
-  const getCurrentBackground = (): typeof BACKGROUND_OPTIONS[number] => {
+  const getCurrentBackground = (): BackgroundOption => {
     if (calendarSettings.isTransparent) {
-      return BACKGROUND_OPTIONS[0]
+      return BACKGROUND_OPTIONS[0]!  // Assert non-null with !
     }
     const found = BACKGROUND_OPTIONS.find(opt => opt.color === calendarSettings.bgColor)
-    return found ?? BACKGROUND_OPTIONS[0]  // Always return a valid option
+    return found ?? BACKGROUND_OPTIONS[0]!  // Assert non-null with !
   }
 
   return (
