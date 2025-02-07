@@ -9,8 +9,8 @@ import { getEventColor } from '@/utils/colors'
 interface CalendarSettings {
   showToday?: boolean
   isTransparent?: boolean
-  bgColor?: string
-  bgGradient?: string
+  bgColor?: string | null
+  bgGradient?: string | null
   showShadow?: boolean
 }
 

@@ -7,7 +7,7 @@ import CalendarGrid from './CalendarGrid'
 import MonthSelector from './MonthSelector'
 import Toolbar from './Toolbar'
 import { CalendarProvider, useCalendarContext } from '@/context/CalendarContext'
-import { format, getDaysInMonth, startOfMonth } from 'date-fns'
+import { format } from 'date-fns'
 
 function CalendarContent(): React.ReactElement {
   const calendarRef = useRef<HTMLDivElement>(null)
@@ -122,23 +122,13 @@ function CalendarContent(): React.ReactElement {
       console.error('Error generating image:', error)
     }
   }
-
-  // Calculate if we need 6 rows
-  const monthStart = startOfMonth(currentDate)
-  const startDay = monthStart.getDay()
-  const daysInMonth = getDaysInMonth(currentDate)
-  const needsSixRows = Math.ceil((startDay + daysInMonth) / 7) > 5
-
-  // Base and extended heights
-  const baseHeight = 624
-  const sixRowHeight = 720  // Increased height for 6 rows
-
+  
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
       {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">calshots</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">calshots</h1>
 
-      <p className="text-gray-500 text-sm mb-2">create and share your project in a month view.</p>
+      <p className="text-gray-500 text-sm mb-5">create and share your project in a month view. made by <a href="https://ezramechaber.com" className="underline">ezra</a>.</p>
 
       {/* Visible calendar with scaling */}
       <div 
@@ -187,9 +177,6 @@ function CalendarContent(): React.ReactElement {
       </div>
 
       {/* Footer */}
-      <div className="mt-8 text-sm text-gray-500">
-        2025 | <a href="https://ezramechaber.com">Ezra Mechaber</a>
-      </div>
 
       {/* Hidden export version */}
       <div 

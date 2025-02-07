@@ -1,10 +1,9 @@
 'use client'
 
 import React from 'react'
-import { useState } from 'react'
 import { Switch } from '@headlessui/react'
 import { useCalendarContext } from '@/context/CalendarContext'
-import { ClipboardCopy, Download, ShadowOuter, Calendar } from 'lucide-react'
+import { ClipboardCopy, Download} from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 
 const BACKGROUND_OPTIONS = [
@@ -66,8 +65,8 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
     if (option.id === 'transparent') {
       setCalendarSettings({ 
         isTransparent: true,
-        bgColor: null,
-        bgGradient: null
+        bgColor: '',
+        bgGradient: ''
       })
     } else {
       setCalendarSettings({ 
@@ -78,11 +77,12 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
     }
   }
 
-  const getCurrentBackground = () => {
+  const getCurrentBackground = (): typeof BACKGROUND_OPTIONS[number] => {
     if (calendarSettings.isTransparent) {
       return BACKGROUND_OPTIONS[0]
     }
-    return BACKGROUND_OPTIONS.find(opt => opt.color === calendarSettings.bgColor) || BACKGROUND_OPTIONS[0]
+    const found = BACKGROUND_OPTIONS.find(opt => opt.color === calendarSettings.bgColor)
+    return found ?? BACKGROUND_OPTIONS[0]  // Always return a valid option
   }
 
   return (
@@ -149,7 +149,7 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
           {/* Switches - Fixed width */}
           <div className="w-[120px]">
             <Switch
-              checked={calendarSettings.showShadow}
+              checked={calendarSettings.showShadow ?? false}
               onChange={(checked) => setCalendarSettings({ showShadow: checked })}
               className={`${calendarSettings.showShadow ? 'bg-gray-900' : 'bg-gray-200'} relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
             >
@@ -161,7 +161,7 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
 
           <div className="w-[120px]">
             <Switch
-              checked={calendarSettings.showToday}
+              checked={calendarSettings.showToday ?? false}
               onChange={(checked) => setCalendarSettings({ showToday: checked })}
               className={`${calendarSettings.showToday ? 'bg-gray-900' : 'bg-gray-200'} relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
             >
@@ -172,11 +172,12 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
           </div>
         </div>
 
-        {/* Action buttons - Right aligned */}
+        {/* Action buttons */}
         <div className="flex items-center gap-2">
           <button
             onClick={onCopy}
             className="p-2.5 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-all"
+            aria-label="Copy to clipboard"
           >
             <ClipboardCopy className="w-4 h-4" />
           </button>
@@ -184,6 +185,7 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
           <button
             onClick={onDownload}
             className="p-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all"
+            aria-label="Download image"
           >
             <Download className="w-4 h-4" />
           </button>
