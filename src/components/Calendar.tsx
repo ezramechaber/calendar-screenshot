@@ -126,7 +126,7 @@ function CalendarContent(): React.ReactElement {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
       {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">calshots</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">calshot</h1>
 
       <p className="text-gray-500 text-sm mb-5">create and share your project in a month view. made by <a href="https://ezramechaber.com" className="underline">ezra</a>.</p>
 
