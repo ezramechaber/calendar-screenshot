@@ -547,7 +547,7 @@ export default function CalendarGrid(): React.ReactElement {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className={`
-        grid grid-cols-7 gap-[1px] bg-gray-100 rounded-lg p-[1px] w-full h-full
+        grid grid-cols-7 gap-[1px] bg-gray-100 p-[1px] w-full h-full
         ${needsSixRows 
           ? 'grid-rows-[auto_repeat(6,1fr)]' 
           : 'grid-rows-[auto_repeat(5,1fr)]'
@@ -557,7 +557,7 @@ export default function CalendarGrid(): React.ReactElement {
         {DAYS_OF_WEEK.map(day => (
           <div 
             key={day}
-            className="p-2 text-center bg-white text-xs font-semibold text-gray-500 tracking-wider uppercase"
+            className="p-2 text-center bg-white text-xs font-semibold text-gray-500 tracking-wider uppercase border-gray-100"
           >
             {day}
           </div>
@@ -578,7 +578,7 @@ export default function CalendarGrid(): React.ReactElement {
           })()
           
           return (
-          <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative">
+          <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative bg-gray-100">
               {/* Only show ghost preview in the correct week */}
               {resizeState.eventId && resizeState.startDate && 
                resizeState.endDate && showGhostInThisWeek && (

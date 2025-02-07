@@ -136,42 +136,44 @@ function CalendarContent(): React.ReactElement {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 md:p-8 pb-28">
       {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900">Calendar Shots</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">calshots</h1>
+
+      <p className="text-gray-500 text-sm mb-2">create and share your project in a month view.</p>
 
       {/* Visible calendar with scaling */}
       <div 
-        className="relative p-12 rounded-2xl"
+        className="relative"
         style={{ 
           width: 1124,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
           background: calendarSettings.isTransparent 
             ? 'transparent' 
-            : (calendarSettings.bgGradient || calendarSettings.bgColor || '#ffffff')
+            : (calendarSettings.bgGradient || calendarSettings.bgColor || '#ffffff'),
+          padding: '48px', // Fixed padding that will scale with the container
         }}
       >
         <div 
-          className="relative"
+          className="relative justify-center"
           style={{ 
             width: 1024,
-            height: needsSixRows ? sixRowHeight : baseHeight,
-            transform: `scale(${scale})`,
-            transformOrigin: 'top center'
+            margin: '0 auto'
           }}
         >
           <div 
             ref={calendarRef} 
-            className={`w-full rounded-xl border border-gray-100 p-6 bg-white/95 backdrop-blur-sm ${
-              calendarSettings.showShadow ? 'shadow-xl' : ''
-            }`}
+            className="w-full rounded-xl border border-gray-100 p-8 bg-white backdrop-blur-sm"
             style={{
               display: 'flex',
               flexDirection: 'column',
               aspectRatio: '1.64',
-              height: 'auto'
+              height: 'auto',
+              ...(calendarSettings.showShadow && { boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' })
             }}
           >
-            <div className="relative flex items-center justify-center mb-8">
-              <h1 className="text-2xl font-medium tracking-tight absolute text-gray-800">
-                {format(currentDate, 'MMMM yyyy').toUpperCase()}
+            <div className="relative flex items-center mb-8">
+              <h1 className="text-2xl font-medium tracking-tight text-gray-800">
+                {format(currentDate, 'MMMM yyyy')}
               </h1>
               <div className="ml-auto">
                 <MonthSelector />
