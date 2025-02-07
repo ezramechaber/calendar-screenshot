@@ -23,6 +23,14 @@ interface EventDisplayInfo {
   rowIndex: number
 }
 
+// Add new interface for resize state
+interface ResizeState {
+  eventId: string | null
+  startDate: Date | null
+  endDate: Date | null
+  color: string | null
+}
+
 interface DraggableEventProps {
   event: Event
   columnStart: number
@@ -32,6 +40,9 @@ interface DraggableEventProps {
   isMiddle: boolean
   date: Date
   onEventClick: (e: React.MouseEvent, event: Event) => void
+  onResizeStart: (eventId: string, startDate: Date, color: string) => void
+  onResizeUpdate: (endDate: Date) => void
+  onResizeEnd: () => void
   style?: React.CSSProperties
 }
 
@@ -44,12 +55,16 @@ function DraggableEvent({
   isMiddle,
   date,
   onEventClick,
+  onResizeStart,
+  onResizeUpdate,
+  onResizeEnd,
   style
 }: DraggableEventProps) {
   const { deleteEvent, calendarSettings, resizeEvent } = useCalendarContext()
   const eventColors = getEventColor(calendarSettings.bgColor)
   const eventColor = event.color || eventColors.colors[0]
   const [previewSpan, setPreviewSpan] = useState<number | null>(null)
+  const [ghostEndDate, setGhostEndDate] = useState<Date | null>(null)
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.EVENT,
@@ -61,14 +76,47 @@ function DraggableEvent({
 
   const [{ isResizing }, resizeHandle] = useDrag(() => ({
     type: ItemTypes.RESIZE_HANDLE,
-    item: { id: event.id, type: ItemTypes.RESIZE_HANDLE },
+    item: () => {
+      console.log('Resize start:', {
+        eventId: event.id,
+        startDate: event.startDate,
+        color: eventColor
+      })
+      onResizeStart(event.id, new Date(event.startDate), eventColor)
+      return { 
+        id: event.id, 
+        type: ItemTypes.RESIZE_HANDLE,
+        startDate: event.startDate
+      }
+    },
     collect: (monitor) => ({
       isResizing: monitor.isDragging()
     }),
-    hover: (item, monitor) => {
-      setPreviewSpan(columnSpan)
+    hover: (item: { id: string, startDate: Date }, monitor) => {
+      const clientOffset = monitor.getClientOffset()
+      if (!clientOffset) return
+
+      // Get the DOM element we're hovering over
+      const element = document.elementFromPoint(clientOffset.x, clientOffset.y)
+      if (!element) return
+
+      // Find the closest date cell
+      const cellElement = element.closest('[data-date]')
+      if (!cellElement) return
+      
+      const hoverDate = new Date(cellElement.getAttribute('data-date') || '')
+      console.log('Resize hover:', { 
+        hoverDate,
+        clientOffset,
+        element: cellElement.getAttribute('data-date')
+      })
+      onResizeUpdate(hoverDate)
     },
-    end: () => setPreviewSpan(null)
+    canDrag: () => true,  // Keep this
+    end: () => {
+      console.log('Resize end')
+      onResizeEnd()
+    }
   }))
 
   const [{ isOver }, drop] = useDrop(() => ({
@@ -106,7 +154,7 @@ function DraggableEvent({
         drop(node)
       }}
       className={`relative text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis 
-        group transition-opacity transition-colors duration-100 hover:opacity-90 pointer-events-auto select-none 
+        group/event transition-colors duration-100 pointer-events-auto select-none 
         cursor-grab active:cursor-grabbing h-6 ${isDragging ? 'opacity-50' : ''} 
         ${isOver ? 'opacity-80' : ''}`}
       style={{
@@ -128,8 +176,23 @@ function DraggableEvent({
         borderRadius: isStart && isEnd ? '4px' : 
                      isStart ? '4px 0 0 4px' : 
                      isEnd ? '0 4px 4px 0' : '0',
+        filter: 'brightness(var(--event-brightness, 1))',
         ...style
       }}
+      onMouseEnter={() => {
+        // Find all segments of this event and update their brightness
+        const segments = document.querySelectorAll(`[data-event-id="${event.id}"]`)
+        segments.forEach(segment => {
+          (segment as HTMLElement).style.setProperty('--event-brightness', '0.9')
+        })
+      }}
+      onMouseLeave={() => {
+        const segments = document.querySelectorAll(`[data-event-id="${event.id}"]`)
+        segments.forEach(segment => {
+          (segment as HTMLElement).style.setProperty('--event-brightness', '1')
+        })
+      }}
+      data-event-id={event.id}
       onClick={(e) => onEventClick(e, event)}
     >
       {/* Only show title on first day */}
@@ -144,9 +207,9 @@ function DraggableEvent({
         </span>
       )}
       
-      {/* Only show delete button on first day */}
-      {isStart && (
-        <div className="opacity-0 group-hover:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 transition-opacity">
+      {/* Show delete button on last day */}
+      {isEnd && (
+        <div className="opacity-0 group-hover/event:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 transition-opacity">
           <button
             onClick={handleEventDelete}
             className="p-0.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
@@ -163,8 +226,8 @@ function DraggableEvent({
       {isEnd && (
         <div
           ref={resizeHandle}
-          className={`absolute -right-2 top-0 bottom-0 w-4 cursor-ew-resize opacity-0 
-            group-hover:opacity-100 hover:opacity-100 ${isResizing ? 'opacity-100' : ''}`}
+          className={`absolute -right-2 top-0 bottom-0 w-6 cursor-ew-resize opacity-0 
+            group-hover/event:opacity-100 hover:opacity-100 ${isResizing ? 'opacity-100' : ''}`}
           onClick={e => e.stopPropagation()}
         >
           <div className="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2 w-1 h-4 rounded-full bg-black/20 hover:bg-black/30 transition-colors" />
@@ -178,10 +241,11 @@ interface DroppableProps {
   date: Date
   children: React.ReactNode
   onClick: () => void
+  onResizeHover?: (date: Date) => void
 }
 
-function DroppableDay({ date, children, onClick }: DroppableProps) {
-  const { moveEvent, resizeEvent, events, calendarSettings } = useCalendarContext()
+function DroppableDay({ date, children, onClick, onResizeHover }: DroppableProps) {
+  const { moveEvent, resizeEvent, events, calendarSettings, currentDate } = useCalendarContext()
   
   // Count events on this day
   const eventCount = events.filter(event => {
@@ -196,29 +260,32 @@ function DroppableDay({ date, children, onClick }: DroppableProps) {
     accept: [ItemTypes.EVENT, ItemTypes.RESIZE_HANDLE],
     canDrop: (item: { id: string, type: string }) => {
       if (item.type === ItemTypes.EVENT) {
-        // Allow drop if moving an existing event or if under limit
         const isExistingEvent = events.some(e => e.id === item.id && 
           startOfDay(e.startDate).getTime() === startOfDay(date).getTime())
         return isExistingEvent || eventCount < 2
       }
-      return true // Always allow resize drops
+      return true
+    },
+    hover: (item: { id: string, type: string }, monitor) => {
+      if (item.type === ItemTypes.RESIZE_HANDLE) {
+        console.log('Drop target hover:', { date: date.toISOString() })
+        onResizeHover?.(date)
+      }
     },
     drop: (item: { id: string, type: string }) => {
-      const dropDate = startOfDay(date)
-      
       if (item.type === ItemTypes.EVENT) {
-        moveEvent(item.id, dropDate)
+        moveEvent(item.id, startOfDay(date))
       } else if (item.type === ItemTypes.RESIZE_HANDLE) {
-        resizeEvent(item.id, dropDate)
+        resizeEvent(item.id, startOfDay(date))
       }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop()
     })
-  }))
+  }), [date, events, eventCount, moveEvent, resizeEvent, onResizeHover])
 
-  const isCurrentMonth = date.getMonth() === new Date().getMonth()
+  const isCurrentMonth = date.getMonth() === currentDate.getMonth()
 
   return (
     <div 
@@ -250,6 +317,56 @@ function DroppableDay({ date, children, onClick }: DroppableProps) {
   )
 }
 
+// Update the ResizeGhost component to handle week positioning
+function ResizeGhost({
+  startDate,
+  endDate,
+  color,
+  firstDayOfGrid
+}: {
+  startDate: Date
+  endDate: Date
+  color: string
+  firstDayOfGrid: Date
+}): React.ReactElement | null {
+  const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  if (days <= 0) return null
+
+  // Calculate position based on firstDayOfGrid, just like in showGhostInThisWeek
+  const startOfEventDate = startOfDay(startDate)
+  const startOfFirstDay = startOfDay(firstDayOfGrid)
+  const dayNumber = Math.floor(
+    (startOfEventDate.getTime() - startOfFirstDay.getTime()) / 
+    (1000 * 60 * 60 * 24)
+  )
+  const weekIndex = Math.floor(dayNumber / 7)
+  const dayOfWeek = startDate.getDay()
+
+  return (
+    <div 
+      className="absolute inset-0 pointer-events-none"
+      style={{ 
+        gridColumnStart: `${dayOfWeek + 1}`,
+        gridColumnEnd: `span ${days + 1}`,
+        gridRow: `${weekIndex + 1}`,
+        zIndex: 20
+      }}
+    >
+      <div
+        className="absolute h-6"
+        style={{
+          backgroundColor: color,
+          opacity: 0.4,
+          top: '40px',
+          left: '8px',
+          right: '8px',
+          borderRadius: '4px',
+        }}
+      />
+    </div>
+  )
+}
+
 export default function CalendarGrid(): React.ReactElement {
   const { 
     currentDate, 
@@ -266,6 +383,12 @@ export default function CalendarGrid(): React.ReactElement {
   } = useCalendarContext()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [resizeState, setResizeState] = useState<ResizeState>({
+    eventId: null,
+    startDate: null,
+    endDate: null,
+    color: null
+  })
   
   const monthStart = startOfMonth(currentDate)
   const daysInMonth = getDaysInMonth(currentDate)
@@ -363,19 +486,19 @@ export default function CalendarGrid(): React.ReactElement {
     const startDate = startOfDay(new Date(event.startDate))
     const endDate = startOfDay(new Date(event.endDate))
     const currentDate = startOfDay(new Date(date))
-    
-    const dayOfWeek = date.getDay()
-    const daysUntilWeekEnd = 6 - dayOfWeek
+
+      const dayOfWeek = date.getDay()
+      const daysUntilWeekEnd = 6 - dayOfWeek
     const daysUntilEventEnd = Math.floor((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))
-    
-    const span = Math.min(daysUntilWeekEnd + 1, daysUntilEventEnd + 1)
+      
+      const span = Math.min(daysUntilWeekEnd + 1, daysUntilEventEnd + 1)
     
     const isStart = startDate.getTime() === currentDate.getTime()
     const isEnd = endDate.getTime() === currentDate.getTime()
     const isMiddle = !isStart && !isEnd
 
-    return {
-      event,
+      return {
+        event,
       columnSpan: 1,
       columnStart: 1,
       isLastOfWeek: dayOfWeek === 6,
@@ -388,6 +511,34 @@ export default function CalendarGrid(): React.ReactElement {
 
   const weeks = Math.ceil((startDay + daysInMonth) / 7)
   const needsSixRows = weeks > 5
+
+  const handleResizeStart = (eventId: string, startDate: Date, color: string) => {
+    console.log('Setting resize state:', { eventId, startDate, color })
+    setResizeState({
+      eventId,
+      startDate,
+      endDate: startDate,
+      color
+    })
+  }
+
+  const handleResizeUpdate = (endDate: Date) => {
+    console.log('Updating resize state:', { endDate })
+    setResizeState(prev => ({
+      ...prev,
+      endDate
+    }))
+  }
+
+  const handleResizeEnd = () => {
+    console.log('Clearing resize state')
+    setResizeState({
+      eventId: null,
+      startDate: null,
+      endDate: null,
+      color: null
+    })
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -412,8 +563,31 @@ export default function CalendarGrid(): React.ReactElement {
         {Array.from({ length: weeks }).map((_, weekIndex) => {
           const weekStart = addDays(firstDayOfGrid, weekIndex * 7)
           
+          // Calculate if the resize ghost belongs in this week
+          const showGhostInThisWeek = resizeState.startDate && (() => {
+            const startOfEventDate = startOfDay(resizeState.startDate)
+            const startOfFirstDay = startOfDay(firstDayOfGrid)
+            const dayNumber = Math.floor(
+              (startOfEventDate.getTime() - startOfFirstDay.getTime()) / 
+              (1000 * 60 * 60 * 24)
+            )
+            return Math.floor(dayNumber / 7) === weekIndex
+          })()
+          
           return (
-            <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative">
+          <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative">
+              {/* Only show ghost preview in the correct week */}
+              {resizeState.eventId && resizeState.startDate && 
+               resizeState.endDate && showGhostInThisWeek && (
+                <ResizeGhost
+                  startDate={resizeState.startDate}
+                  endDate={resizeState.endDate}
+                  color={resizeState.color || '#000000'}
+                  firstDayOfGrid={firstDayOfGrid}
+                />
+              )}
+              
+              {/* Regular calendar cells */}
               {Array.from({ length: 7 }).map((_, dayIndex) => {
                 const dayNumber = weekIndex * 7 + dayIndex
                 const date = addDays(firstDayOfGrid, dayNumber)
@@ -423,17 +597,17 @@ export default function CalendarGrid(): React.ReactElement {
                 
                 // Get events for this specific day
                 const dateEvents = getEventsForDate(date)
-                
-                return (
+
+                  return (
                   <DroppableDay
                     key={dayIndex}
                     date={date}
                     onClick={() => handleCellClick(date)}
+                    onResizeHover={handleResizeUpdate}
                   >
-                    {/* Render both events and QuickCreateEvent */}
                     {dateEvents.map(({ event, isStart, isEnd, isMiddle, rowIndex }) => (
                       <DraggableEvent
-                        key={event.id}
+                      key={event.id}
                         event={event}
                         columnStart={1}
                         columnSpan={1}
@@ -442,6 +616,9 @@ export default function CalendarGrid(): React.ReactElement {
                         isMiddle={isMiddle}
                         date={date}
                         onEventClick={handleEventClick}
+                        onResizeStart={handleResizeStart}
+                        onResizeUpdate={handleResizeUpdate}
+                        onResizeEnd={handleResizeEnd}
                         style={{
                           gridRow: rowIndex + 1
                         }}
@@ -455,7 +632,7 @@ export default function CalendarGrid(): React.ReactElement {
                           setIsQuickCreating(false)
                           setQuickCreateDate(null)
                         }}
-                        style={{
+                      style={{
                           gridRow: dateEvents.length + 1 // Place after existing events
                         }}
                       />
@@ -501,7 +678,7 @@ function QuickCreateEvent({
   onSave: (title: string, date: Date) => void
   onCancel: () => void
   style?: React.CSSProperties
-}) {
+}): React.ReactElement {
   const [title, setTitle] = useState('')
   const { calendarSettings } = useCalendarContext()
   const eventColors = getEventColor(calendarSettings.bgColor)
@@ -534,8 +711,8 @@ function QuickCreateEvent({
         style={{
           backgroundColor: eventColor,
           boxShadow: eventColors.boxShadow,
-          marginLeft: '2px',
-          marginRight: '2px'
+          marginLeft: '8px',
+          marginRight: '8px'
         }}
       >
         <input
