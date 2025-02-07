@@ -1,10 +1,11 @@
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { Switch } from '@headlessui/react'
 import { useCalendarContext } from '@/context/CalendarContext'
 import { ClipboardCopy, Download} from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
+import { useToolbarPosition } from '@/hooks/useToolbarPosition'
 
 // First, define the type for our background options
 type BackgroundOption = {
@@ -27,6 +28,7 @@ const BACKGROUND_OPTIONS: BackgroundOption[] = [
 interface ToolbarProps {
   onDownload: () => void
   onCopy: () => Promise<void>
+  calendarRef: React.RefObject<HTMLDivElement>
 }
 
 function adjustColor(color: string, amount: number): string {
@@ -67,7 +69,9 @@ function generateGradient(baseColor: string, angle: number): string {
   )`
 }
 
-export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.ReactElement {
+export default function Toolbar({ onDownload, onCopy, calendarRef }: ToolbarProps): React.ReactElement {
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const isSticky = useToolbarPosition(calendarRef, toolbarRef)
   const { calendarSettings, setCalendarSettings } = useCalendarContext()
 
   const handleBackgroundChange = (option: typeof BACKGROUND_OPTIONS[number]) => {
@@ -95,7 +99,17 @@ export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.Rea
   }
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[min(95%,600px)] bg-white shadow-lg border border-gray-200 rounded-t-lg">
+    <div 
+      ref={toolbarRef}
+      className={`
+        transition-[margin,border-radius] duration-300 ease-in-out
+        w-[min(95%,600px)] bg-white shadow-lg
+        ${isSticky 
+          ? 'fixed bottom-0 left-1/2 -translate-x-1/2 rounded-t-lg border-t border-x border-gray-200' 
+          : 'relative mx-auto mt-8 rounded-lg border border-gray-200'
+        }
+      `}
+    >
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           {/* Background Selector - Fixed width */}
