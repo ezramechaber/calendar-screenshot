@@ -3,5 +3,5 @@ export interface Event {
   title: string
   startDate: Date
   endDate: Date
-  color?: string
+  color: string | undefined | null
 } 

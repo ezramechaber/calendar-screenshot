@@ -48,12 +48,8 @@ interface DraggableEventProps {
 
 function DraggableEvent({ 
   event, 
-  columnStart, 
-  columnSpan, 
   isStart,
   isEnd,
-  isMiddle,
-  date,
   onEventClick,
   onResizeStart,
   onResizeUpdate,
@@ -63,10 +59,12 @@ function DraggableEvent({
   const { deleteEvent, calendarSettings, resizeEvent } = useCalendarContext()
   const eventColors = getEventColor(calendarSettings.bgColor)
   const eventColor = event.color || eventColors.colors[0]
-  const [previewSpan, setPreviewSpan] = useState<number | null>(null)
-  const [ghostEndDate, setGhostEndDate] = useState<Date | null>(null)
 
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const [{ isDragging }, drag] = useDrag<
+    { id: string; type: string },
+    void,
+    { isDragging: boolean }
+  >(() => ({
     type: ItemTypes.EVENT,
     item: { id: event.id, type: ItemTypes.EVENT },
     collect: (monitor) => ({
@@ -74,7 +72,11 @@ function DraggableEvent({
     })
   }))
 
-  const [{ isResizing }, resizeHandle] = useDrag(() => ({
+  const [{ isResizing }, resizeHandle] = useDrag<
+    { id: string; type: string; startDate: Date },
+    void,
+    { isResizing: boolean }
+  >(() => ({
     type: ItemTypes.RESIZE_HANDLE,
     item: () => {
       console.log('Resize start:', {
@@ -82,7 +84,7 @@ function DraggableEvent({
         startDate: event.startDate,
         color: eventColor
       })
-      onResizeStart(event.id, new Date(event.startDate), eventColor)
+      onResizeStart(event.id, new Date(event.startDate), eventColor || '#000000')
       return { 
         id: event.id, 
         type: ItemTypes.RESIZE_HANDLE,
@@ -92,7 +94,7 @@ function DraggableEvent({
     collect: (monitor) => ({
       isResizing: monitor.isDragging()
     }),
-    hover: (item: { id: string, startDate: Date }, monitor) => {
+    hover: (_item: { id: string; startDate: Date }, monitor: any) => {
       const clientOffset = monitor.getClientOffset()
       if (!clientOffset) return
 
@@ -119,13 +121,17 @@ function DraggableEvent({
     }
   }))
 
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: ItemTypes.RESIZE_HANDLE,
-    drop: (item: { id: string, type: string }, monitor) => {
+  const [{ isOver }, drop] = useDrop<
+    { id: string; type: string },
+    void,
+    { isOver: boolean }
+  >(() => ({
+    accept: [ItemTypes.EVENT, ItemTypes.RESIZE_HANDLE],
+    drop: (item: { id: string; type: string }, monitor) => {
       if (item.type === ItemTypes.RESIZE_HANDLE) {
         const clientOffset = monitor.getClientOffset()
         if (!clientOffset) return
-
+  
         const elements = document.elementsFromPoint(clientOffset.x, clientOffset.y)
         const cellElement = elements.find(el => el.hasAttribute('data-date'))
         
@@ -149,7 +155,7 @@ function DraggableEvent({
 
   return (
     <div
-      ref={(node) => {
+      ref={(node: HTMLDivElement | null) => {
         drag(node)
         drop(node)
       }}
@@ -159,7 +165,7 @@ function DraggableEvent({
         ${isOver ? 'opacity-80' : ''}`}
       style={{
         backgroundColor: eventColor,
-        color: isLightColor(eventColor) ? '#000000' : '#ffffff',
+        color: isLightColor(eventColor || '#000000') ? '#000000' : '#ffffff',
         padding: '3px',
         paddingLeft: isStart ? '5px' : '0',
         paddingRight: isEnd ? '5px' : '0',
@@ -225,7 +231,9 @@ function DraggableEvent({
       {/* Only show resize handle on last day */}
       {isEnd && (
         <div
-          ref={resizeHandle}
+          ref={(node: HTMLDivElement | null) => {
+            resizeHandle(node)
+          }}
           className={`absolute -right-2 top-0 bottom-0 w-4 cursor-ew-resize 
             opacity-0 group-hover/event:opacity-100 hover:opacity-100 
             ${isResizing ? 'opacity-0 !important' : ''}`}
@@ -261,9 +269,13 @@ function DroppableDay({ date, children, onClick, onResizeHover }: DroppableProps
     return eventDate.getTime() === currentDate.getTime()
   }).length
 
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+  const [{ isOver, canDrop }, drop] = useDrop<
+    { id: string; type: string },
+    void,
+    { isOver: boolean; canDrop: boolean }
+  >(() => ({
     accept: [ItemTypes.EVENT, ItemTypes.RESIZE_HANDLE],
-    canDrop: (item: { id: string, type: string }) => {
+    canDrop: (item: { id: string; type: string }) => {
       if (item.type === ItemTypes.EVENT) {
         const isExistingEvent = events.some(e => e.id === item.id && 
           startOfDay(e.startDate).getTime() === startOfDay(date).getTime())
@@ -271,13 +283,13 @@ function DroppableDay({ date, children, onClick, onResizeHover }: DroppableProps
       }
       return true
     },
-    hover: (item: { id: string, type: string }, monitor) => {
-      if (item.type === ItemTypes.RESIZE_HANDLE) {
+    hover: (_item: { id: string; type: string }) => {  // Add underscore to mark as intentionally unused
+      if (_item.type === ItemTypes.RESIZE_HANDLE) {
         console.log('Drop target hover:', { date: date.toISOString() })
         onResizeHover?.(date)
       }
     },
-    drop: (item: { id: string, type: string }) => {
+    drop: (item: { id: string; type: string }) => {
       if (item.type === ItemTypes.EVENT) {
         moveEvent(item.id, startOfDay(date))
       } else if (item.type === ItemTypes.RESIZE_HANDLE) {
@@ -294,7 +306,9 @@ function DroppableDay({ date, children, onClick, onResizeHover }: DroppableProps
 
   return (
     <div 
-      ref={drop}
+      ref={(node: HTMLDivElement | null) => {
+        drop(node)
+      }}
       data-date={date.toISOString()}
       className={`min-h-[100px] relative cursor-pointer transition-colors border-r border-gray-100
         ${isOver && canDrop ? 'bg-gray-50' : ''}
@@ -377,14 +391,11 @@ export default function CalendarGrid(): React.ReactElement {
     currentDate, 
     setSelectedDate, 
     events, 
-    deleteEvent, 
-    calendarSettings,
     isQuickCreating,
     setIsQuickCreating,
     quickCreateDate,
     setQuickCreateDate,
-    handleQuickCreate,
-    moveEvent
+    handleQuickCreate
   } = useCalendarContext()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
@@ -414,15 +425,7 @@ export default function CalendarGrid(): React.ReactElement {
     setIsDialogOpen(true)
   }
 
-  const handleEventDelete = (e: React.MouseEvent, eventId: string) => {
-    e.stopPropagation() // Prevent event click
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      deleteEvent(eventId)
-    }
-  }
-
   const getEventsForDate = (date: Date, rowCache: Map<string, number> = new Map()): EventDisplayInfo[] => {
-    const dateKey = date.toISOString().split('T')[0]
     
     // First get any events that continue from previous days
     const continuingEvents = events.filter(event => {
@@ -493,10 +496,6 @@ export default function CalendarGrid(): React.ReactElement {
     const currentDate = startOfDay(new Date(date))
 
       const dayOfWeek = date.getDay()
-      const daysUntilWeekEnd = 6 - dayOfWeek
-    const daysUntilEventEnd = Math.floor((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))
-      
-      const span = Math.min(daysUntilWeekEnd + 1, daysUntilEventEnd + 1)
     
     const isStart = startDate.getTime() === currentDate.getTime()
     const isEnd = endDate.getTime() === currentDate.getTime()
@@ -566,7 +565,6 @@ export default function CalendarGrid(): React.ReactElement {
         
         {/* Calendar cells */}
         {Array.from({ length: weeks }).map((_, weekIndex) => {
-          const weekStart = addDays(firstDayOfGrid, weekIndex * 7)
           
           // Calculate if the resize ghost belongs in this week
           const showGhostInThisWeek = resizeState.startDate && (() => {
@@ -596,7 +594,6 @@ export default function CalendarGrid(): React.ReactElement {
               {Array.from({ length: 7 }).map((_, dayIndex) => {
                 const dayNumber = weekIndex * 7 + dayIndex
                 const date = addDays(firstDayOfGrid, dayNumber)
-                const isCurrentMonth = date.getMonth() === currentDate.getMonth()
                 const isQuickCreateCell = isQuickCreating && 
                   quickCreateDate?.toDateString() === date.toDateString()
                 
@@ -723,15 +720,13 @@ function QuickCreateEvent({
         <input
           id="quick-create-input"
           className="w-full h-full bg-transparent focus:outline-none
-            text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+            text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis
+            placeholder:text-black/70 dark:placeholder:text-white/70"
           style={{
             padding: '3px',
             paddingLeft: '5px',
             paddingRight: '5px',
-            color: isLightColor(eventColor) ? '#000000' : '#ffffff',
-            '::placeholder': {
-              color: isLightColor(eventColor) ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)'
-            }
+            color: isLightColor(eventColor || '#000000') ? '#000000' : '#ffffff',
           }}
           value={title}
           onChange={e => setTitle(e.target.value)}

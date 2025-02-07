@@ -6,9 +6,6 @@ import { Event } from '@/types'
 import { startOfDay } from 'date-fns'
 import { getEventColor } from '@/utils/colors'
 
-// Add the default color constant
-const DEFAULT_COLOR = '#4F46E5'
-
 interface CalendarSettings {
   showToday?: boolean
   isTransparent?: boolean
@@ -58,10 +55,11 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
   const [quickCreateDate, setQuickCreateDate] = useState<Date | null>(null)
 
   const addEvent = (event: Event) => {
-    const newEvent = {
+    const newEvent: Event = {
       ...event,
       startDate: new Date(event.startDate),
-      endDate: new Date(event.endDate)
+      endDate: new Date(event.endDate),
+      color: event.color ?? null  // Handle undefined case
     }
     setEvents(prev => [...prev, newEvent])
   }
@@ -73,7 +71,8 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
             ...event, 
             ...eventData,
             startDate: new Date(eventData.startDate || event.startDate),
-            endDate: new Date(eventData.endDate || event.endDate)
+            endDate: new Date(eventData.endDate || event.endDate),
+            color: (eventData.color ?? event.color) ?? null  // Handle undefined cases
           } 
         : event
     ))
@@ -94,7 +93,7 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
       title: title || '(No title)',
       startDate: date,
       endDate: date,
-      color: eventColors.colors[0]  // Use the first color from the event colors
+      color: eventColors.colors[0] ?? null
     }
     addEvent(eventData)
     setIsQuickCreating(false)
@@ -109,11 +108,13 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
         (startOfDay(toDate).getTime() - startOfDay(event.startDate).getTime()) / (1000 * 60 * 60 * 24)
       )
       
-      return {
+      const newEvent: Event = {  // Add explicit typing
         ...event,
         startDate: new Date(event.startDate.getTime() + daysDiff * 24 * 60 * 60 * 1000),
-        endDate: new Date(event.endDate.getTime() + daysDiff * 24 * 60 * 60 * 1000)
+        endDate: new Date(event.endDate.getTime() + daysDiff * 24 * 60 * 60 * 1000),
+        color: event.color ?? null  // Handle undefined case
       }
+      return newEvent
     }))
   }
 

@@ -35,7 +35,7 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
 
   // First, extract the color selection logic
   const getDefaultColor = React.useCallback(
-    (eventColor?: string) => eventColor ?? eventColors.colors[0] ?? DEFAULT_COLOR,
+    (eventColor?: string | null) => eventColor ?? eventColors.colors[0] ?? DEFAULT_COLOR,
     [eventColors.colors]
   )
 
@@ -51,23 +51,31 @@ export default function EventDialog({ isOpen, onClose, event }: EventDialogProps
       setIsMultiDay(event.startDate.toString() !== event.endDate.toString())
     } else {
       setTitle('')
-      setStartDate(selectedDate ?? new Date())
-      setEndDate(selectedDate ?? new Date())
+      const initialDate = selectedDate ?? new Date()
+      setStartDate(initialDate)
+      setEndDate(initialDate)  // Initialize end date to match start date
       setSelectedColor(getDefaultColor())
       setIsMultiDay(false)
     }
   }, [event, selectedDate, isOpen, getDefaultColor])
 
+  // Add effect to ensure endDate is never before startDate
+  useEffect(() => {
+    if (endDate && startDate && endDate < startDate) {
+      setEndDate(startDate)
+    }
+  }, [startDate, endDate])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!startDate) return
+    if (!startDate || !endDate) return
 
     const eventData: Event = {
+      id: event?.id || Date.now().toString(),
       title: title || '(No title)',
       startDate: startDate,
-      endDate: isMultiDay ? endDate : startDate,
+      endDate: isMultiDay ? endDate : startDate,  // Use endDate for multi-day events
       color: selectedColor,
-      id: event?.id || Date.now().toString(),
     }
 
     if (event) {
