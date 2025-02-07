@@ -132,6 +132,7 @@ function CalendarContent(): React.ReactElement {
 
       {/* Visible calendar with scaling */}
       <div 
+        ref={calendarRef}
         className="relative"
         style={{ 
           width: 1124,
@@ -222,7 +223,11 @@ function CalendarContent(): React.ReactElement {
         </div>
       </div>
 
-      <Toolbar onDownload={handleDownload} onCopy={handleCopy} />
+      <Toolbar 
+        onDownload={handleDownload} 
+        onCopy={handleCopy}
+        calendarRef={calendarRef as React.RefObject<HTMLDivElement>}
+      />
     </div>
   )
 }

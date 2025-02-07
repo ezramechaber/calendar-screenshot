@@ -10,8 +10,35 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "calshots",
-  description: "monthview screenshot generator",
+  title: "calshot | calendar screenshot generator",
+  description: "Create beautiful calendar screenshots for your project timelines and roadmaps. Drag and drop events, customize styles, export in seconds.",
+  openGraph: {
+    title: "calshot | calendar screenshot generator",
+    description: "Create beautiful calendar screenshots for your project timelines and roadmaps",
+    url: "https://calshot.xyz",
+    siteName: "calshot",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 778,
+        alt: "calshot preview",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "calshot | calendar screenshot generator",
+    description: "Create beautiful calendar screenshots for your project timelines and roadmaps",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  metadataBase: new URL("https://calshot.xyz"),  // Update with your actual domain
 };
 
 export default function RootLayout({
