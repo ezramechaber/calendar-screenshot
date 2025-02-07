@@ -1,9 +1,28 @@
 'use client'
 
 import React from 'react'
-import { useState } from 'react'
 import { Switch } from '@headlessui/react'
 import { useCalendarContext } from '@/context/CalendarContext'
+import { ClipboardCopy, Download} from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
+
+// First, define the type for our background options
+type BackgroundOption = {
+  id: string;
+  name: string;
+  color: string | null;
+  angle?: number;
+}
+
+// Then define our constant with the type
+const BACKGROUND_OPTIONS: BackgroundOption[] = [
+  { id: 'transparent', name: 'Transparent', color: null },
+  { id: 'blue', name: 'Blue', color: '#3B82F6', angle: 45 },
+  { id: 'purple', name: 'Purple', color: '#8B5CF6', angle: 135 },
+  { id: 'red', name: 'Red', color: '#EF4444', angle: 225 },
+  { id: 'green', name: 'Green', color: '#10B981', angle: 315 },
+  { id: 'orange', name: 'Orange', color: '#F59E0B', angle: 180 },
+] as const;
 
 interface ToolbarProps {
   onDownload: () => void
@@ -32,13 +51,12 @@ function adjustColor(color: string, amount: number): string {
   return `#${rHex}${gHex}${bHex}`
 }
 
-function generateGradient(baseColor: string): string {
+function generateGradient(baseColor: string, angle: number): string {
   // Generate more dramatic shades
   const lighterColor = adjustColor(baseColor, 30)    // 30% lighter
   const darkerColor = adjustColor(baseColor, -30)    // 30% darker
   const evenLighter = adjustColor(baseColor, 45)     // 45% lighter
   const evenDarker = adjustColor(baseColor, -45)     // 45% darker
-  const angle = Math.floor(Math.random() * 360)
   
   return `linear-gradient(${angle}deg, 
     ${evenDarker}, 
@@ -51,156 +69,134 @@ function generateGradient(baseColor: string): string {
 
 export default function Toolbar({ onDownload, onCopy }: ToolbarProps): React.ReactElement {
   const { calendarSettings, setCalendarSettings } = useCalendarContext()
-  const [showToday, setShowToday] = useState(calendarSettings.showToday ?? true)
-  const [isTransparent, setIsTransparent] = useState(calendarSettings.isTransparent ?? true)
-  const [bgColor, setBgColor] = useState(calendarSettings.bgColor ?? '#ffffff')
-  const [showShadow, setShowShadow] = useState(calendarSettings.showShadow ?? true)
 
-  const handleSettingChange = <T extends boolean | string>(
-    key: 'showToday' | 'isTransparent' | 'bgColor' | 'showShadow',
-    value: T
-  ) => {
-    switch (key) {
-      case 'showToday':
-        setShowToday(value as boolean)
-        setCalendarSettings({ [key]: value as boolean })
-        break
-      case 'isTransparent':
-        setIsTransparent(value as boolean)
-        setCalendarSettings({ [key]: value as boolean })
-        break
-      case 'bgColor':
-        setBgColor(value as string)
-        setIsTransparent(false)
-        setCalendarSettings({ 
-          bgColor: value as string,
-          bgGradient: generateGradient(value as string),
-          isTransparent: false
-        })
-        break
-      case 'showShadow':
-        setShowShadow(value as boolean)
-        setCalendarSettings({ [key]: value as boolean })
-        break
+  const handleBackgroundChange = (option: typeof BACKGROUND_OPTIONS[number]) => {
+    if (option.id === 'transparent') {
+      setCalendarSettings({ 
+        isTransparent: true,
+        bgColor: '',
+        bgGradient: ''
+      })
+    } else {
+      setCalendarSettings({ 
+        isTransparent: false,
+        bgColor: option.color,
+        bgGradient: generateGradient(option.color!, option.angle!)
+      })
     }
   }
 
-  const handleColorClick = () => {
-    // If transparent is on, turn it off first
-    if (isTransparent) {
-      setIsTransparent(false)
-      setCalendarSettings({ isTransparent: false })
+  const getCurrentBackground = (): BackgroundOption => {
+    if (calendarSettings.isTransparent) {
+      return BACKGROUND_OPTIONS[0]!  // Assert non-null with !
     }
+    const found = BACKGROUND_OPTIONS.find(opt => opt.color === calendarSettings.bgColor)
+    return found ?? BACKGROUND_OPTIONS[0]!  // Assert non-null with !
   }
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[min(95%,800px)] bg-white shadow-lg border border-gray-200 rounded-t-lg">
-      <div className="px-6 py-4 flex items-center gap-8">
-        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
-          <Switch
-            checked={showToday}
-            onChange={(checked) => handleSettingChange('showToday', checked)}
-            className={`${
-              showToday ? 'bg-gray-900' : 'bg-gray-200'
-            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
-          >
-            <span className="sr-only">Show today&apos;s date</span>
-            <span
-              className={`${
-                showToday ? 'translate-x-5' : 'translate-x-1'
-              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
-            />
-          </Switch>
-          <span className="text-sm text-gray-600 whitespace-nowrap">Show today</span>
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[min(95%,600px)] bg-white shadow-lg border border-gray-200 rounded-t-lg">
+      <div className="px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          {/* Background Selector - Fixed width */}
+          <div className="w-[150px]">
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button 
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg 
+                    hover:bg-gray-50 transition-colors
+                    border border-gray-200 shadow-sm
+                    focus:outline-none focus:ring-2 focus:ring-gray-200"
+                >
+                  <div 
+                    className="w-4 h-4 rounded border border-gray-200"
+                    style={{
+                      background: getCurrentBackground().id === 'transparent' 
+                        ? 'transparent' 
+                        : generateGradient(
+                            getCurrentBackground().color!, 
+                            getCurrentBackground().angle!
+                          )
+                    }}
+                  />
+                  <span className="text-sm text-gray-600 truncate">
+                    {getCurrentBackground().name}
+                  </span>
+                </button>
+              </Popover.Trigger>
+
+              <Popover.Portal>
+                <Popover.Content 
+                  className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 w-48"
+                  sideOffset={5}
+                  align="start"
+                >
+                  {BACKGROUND_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded hover:bg-gray-50 transition-colors"
+                      onClick={() => handleBackgroundChange(option)}
+                    >
+                      <div 
+                        className="w-4 h-4 rounded border border-gray-200"
+                        style={{
+                          background: option.id === 'transparent' 
+                            ? 'transparent' 
+                            : generateGradient(option.color!, option.angle!)
+                        }}
+                      />
+                      <span className="text-sm text-gray-600">
+                        {option.name}
+                      </span>
+                    </button>
+                  ))}
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          </div>
+
+          {/* Switches - Fixed width */}
+          <div className="w-[120px]">
+            <Switch
+              checked={calendarSettings.showShadow ?? false}
+              onChange={(checked) => setCalendarSettings({ showShadow: checked })}
+              className={`${calendarSettings.showShadow ? 'bg-gray-900' : 'bg-gray-200'} relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
+            >
+              <span className="sr-only">Show drop shadow</span>
+              <span className={`${calendarSettings.showShadow ? 'translate-x-5' : 'translate-x-1'} inline-block h-3 w-3 transform rounded-full bg-white transition-transform`} />
+            </Switch>
+            <span className="text-sm text-gray-600 ml-2">Shadow</span>
+          </div>
+
+          <div className="w-[120px]">
+            <Switch
+              checked={calendarSettings.showToday ?? false}
+              onChange={(checked) => setCalendarSettings({ showToday: checked })}
+              className={`${calendarSettings.showToday ? 'bg-gray-900' : 'bg-gray-200'} relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
+            >
+              <span className="sr-only">Show today&apos;s date</span>
+              <span className={`${calendarSettings.showToday ? 'translate-x-5' : 'translate-x-1'} inline-block h-3 w-3 transform rounded-full bg-white transition-transform`} />
+            </Switch>
+            <span className="text-sm text-gray-600 ml-2">Today</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
-          <Switch
-            checked={isTransparent}
-            onChange={(checked) => handleSettingChange('isTransparent', checked)}
-            className={`${
-              isTransparent ? 'bg-gray-900' : 'bg-gray-200'
-            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
-          >
-            <span className="sr-only">Make background transparent</span>
-            <span
-              className={`${
-                isTransparent ? 'translate-x-5' : 'translate-x-1'
-              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
-            />
-          </Switch>
-          <span className="text-sm text-gray-600 whitespace-nowrap">Transparent</span>
-        </div>
-
-        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
-          <input
-            type="color"
-            value={bgColor}
-            onChange={(e) => handleSettingChange('bgColor', e.target.value)}
-            onClick={handleColorClick}
-            className={`w-8 h-8 rounded border border-gray-200 cursor-pointer flex-shrink-0 ${
-              isTransparent ? 'opacity-50' : ''
-            }`}
-          />
-          <span className="text-sm text-gray-600 whitespace-nowrap">Background</span>
-        </div>
-
-        <div className="flex items-center gap-3 min-w-[100px] whitespace-nowrap">
-          <Switch
-            checked={showShadow}
-            onChange={(checked) => handleSettingChange('showShadow', checked)}
-            className={`${
-              showShadow ? 'bg-gray-900' : 'bg-gray-200'
-            } relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0`}
-          >
-            <span className="sr-only">Show drop shadow</span>
-            <span
-              className={`${
-                showShadow ? 'translate-x-5' : 'translate-x-1'
-              } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
-            />
-          </Switch>
-          <span className="text-sm text-gray-600 whitespace-nowrap">Shadow</span>
-        </div>
-
-        <div className="ml-auto flex gap-2">
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
           <button
             onClick={onCopy}
-            className="px-4 py-2.5 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+            className="p-2.5 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-all"
+            aria-label="Copy to clipboard"
           >
-            <svg 
-              className="w-4 h-4" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="2" 
-                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-              />
-            </svg>
-            <span className="font-medium">Copy</span>
+            <ClipboardCopy className="w-4 h-4" />
           </button>
+
           <button
             onClick={onDownload}
-            className="px-4 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+            className="p-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all"
+            aria-label="Download image"
           >
-            <svg 
-              className="w-4 h-4" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="2" 
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            <span className="font-medium">Download</span>
+            <Download className="w-4 h-4" />
           </button>
         </div>
       </div>

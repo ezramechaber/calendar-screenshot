@@ -75,12 +75,12 @@ function generateComplementaryColors(baseColor: string): string[] {
   }
 }
 
-export function getEventColor(baseColor?: string): {
+export function getEventColor(baseColor?: string | null): {
   colors: string[];
   textColor: string;
   boxShadow: string;
 } {
-  // If a background color is set and it's not white, use complementary colors
+  // If a background color is set and it's not white/null
   if (baseColor && baseColor !== '#ffffff') {
     const complementaryColors = generateComplementaryColors(baseColor)
     return {

@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Calendar",
-  description: "A clean, modern calendar application",
+  title: "calshots",
+  description: "monthview screenshot generator",
 };
 
 export default function RootLayout({

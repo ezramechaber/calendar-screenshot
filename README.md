@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Calshots
 
-## Getting Started
+A simple calendar screenshot generator for sharing project timelines and roadmaps.
 
-First, run the development server:
+## Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Calshots lets you quickly create and share calendar views. Add events, customize the look, and export as an image.
+
+## Key Features
+
+- Month view calendar
+- Drag & drop events
+- Quick event creation
+- Customizable backgrounds and styling
+- Export to PNG
+- Copy to clipboard
+
+## File Structure
+```
+src/
+├── app/ # Next.js app router
+├── components/
+│ ├── Calendar.tsx # Main calendar wrapper
+│ ├── CalendarGrid.tsx # Calendar grid and events
+│ ├── EventDialog.tsx # Event creation/edit modal
+│ ├── MonthSelector.tsx # Month navigation
+│ └── Toolbar.tsx # Settings and actions
+├── context/
+│ └── CalendarContext.tsx # Global state management
+├── types/
+│ └── index.ts # TypeScript types
+└── utils/
+└── colors.ts # Color generation utilities
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## To Do
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Design Polish
+- [ ] Improve drag and drop (ghost image)
+- [ ] Refine spacing and typography
+- [ ] Unify styles, make them fancier
+- [ ] Improve mobile layout
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Dark Mode
+- [ ] Add theme toggle
+- [ ] Create dark color palette
+- [ ] Handle background colors in dark mode
+- [ ] Persist theme preference in local storage
 
-## Learn More
+### Enhanced Screenshots
+- [ ] Refine export method
+- [ ] Additional themes/fonts/alignment
+- [ ] Improve export quality
+- [ ] Add more background styles
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
