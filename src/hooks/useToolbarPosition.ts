@@ -1,8 +1,8 @@
-import { useEffect, useState, RefObject } from 'react'
+import { useEffect, useState } from 'react'
 
 export function useToolbarPosition(
-  calendarRef: RefObject<HTMLDivElement>,
-  toolbarRef: RefObject<HTMLDivElement>
+  calendarRef: React.RefObject<HTMLDivElement | null>,
+  toolbarRef: React.RefObject<HTMLDivElement | null>
 ) {
   const [isSticky, setIsSticky] = useState(false)  // Start non-sticky
   

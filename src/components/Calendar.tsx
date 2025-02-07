@@ -226,7 +226,7 @@ function CalendarContent(): React.ReactElement {
       <Toolbar 
         onDownload={handleDownload} 
         onCopy={handleCopy}
-        calendarRef={calendarRef}
+        calendarRef={calendarRef as React.RefObject<HTMLDivElement>}
       />
     </div>
   )
