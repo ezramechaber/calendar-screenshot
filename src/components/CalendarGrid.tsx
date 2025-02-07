@@ -209,7 +209,7 @@ function DraggableEvent({
       
       {/* Show delete button on last day */}
       {isEnd && (
-        <div className="opacity-0 group-hover/event:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 transition-opacity">
+        <div className="opacity-0 group-hover/event:opacity-100 absolute right-[5px] top-1/2 -translate-y-1/2 transition-opacity">
           <button
             onClick={handleEventDelete}
             className="p-0.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
@@ -226,11 +226,16 @@ function DraggableEvent({
       {isEnd && (
         <div
           ref={resizeHandle}
-          className={`absolute -right-2 top-0 bottom-0 w-6 cursor-ew-resize opacity-0 
-            group-hover/event:opacity-100 hover:opacity-100 ${isResizing ? 'opacity-100' : ''}`}
+          className={`absolute -right-2 top-0 bottom-0 w-4 cursor-ew-resize 
+            opacity-0 group-hover/event:opacity-100 hover:opacity-100 
+            ${isResizing ? 'opacity-0 !important' : ''}`}
           onClick={e => e.stopPropagation()}
         >
-          <div className="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2 w-1 h-4 rounded-full bg-black/20 hover:bg-black/30 transition-colors" />
+          <div 
+            className={`absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2 
+              w-1 h-4 rounded-full bg-black/20 hover:bg-black/30 transition-colors
+              ${isResizing ? 'opacity-0' : ''}`}
+          />
         </div>
       )}
     </div>
