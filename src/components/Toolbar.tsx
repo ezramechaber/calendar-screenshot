@@ -6,6 +6,7 @@ import { useCalendarContext } from '@/context/CalendarContext'
 import { ClipboardCopy, Download} from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 import { useToolbarPosition } from '@/hooks/useToolbarPosition'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 // First, define the type for our background options
 type BackgroundOption = {
@@ -72,7 +73,8 @@ function generateGradient(baseColor: string, angle: number): string {
 export default function Toolbar({ onDownload, onCopy, calendarRef }: ToolbarProps): React.ReactElement {
   const toolbarRef = useRef<HTMLDivElement>(null)
   const isSticky = useToolbarPosition(calendarRef, toolbarRef)
-  const { calendarSettings, setCalendarSettings } = useCalendarContext()
+  const analytics = useAnalytics()
+  const { calendarSettings, setCalendarSettings, events } = useCalendarContext()
 
   const handleBackgroundChange = (option: typeof BACKGROUND_OPTIONS[number]) => {
     if (option.id === 'transparent') {
@@ -81,11 +83,17 @@ export default function Toolbar({ onDownload, onCopy, calendarRef }: ToolbarProp
         bgColor: '',
         bgGradient: ''
       })
+      analytics.trackSettingsChanged('background_theme', {
+        backgroundTheme: 'transparent'
+      })
     } else {
       setCalendarSettings({ 
         isTransparent: false,
         bgColor: option.color,
         bgGradient: generateGradient(option.color!, option.angle!)
+      })
+      analytics.trackSettingsChanged('background_theme', {
+        backgroundTheme: option.name
       })
     }
   }
@@ -96,6 +104,26 @@ export default function Toolbar({ onDownload, onCopy, calendarRef }: ToolbarProp
     }
     const found = BACKGROUND_OPTIONS.find(opt => opt.color === calendarSettings.bgColor)
     return found ?? BACKGROUND_OPTIONS[0]!  // Assert non-null with !
+  }
+
+  const handleCopy = async () => {
+    await onCopy()
+    analytics.trackCalendarAction('copied', {
+      eventCount: events.length,
+      backgroundTheme: getCurrentBackground().name,
+      isDropShadowVisible: calendarSettings.showShadow ?? false,
+      isTodaysDateVisible: calendarSettings.showToday ?? false
+    })
+  }
+
+  const handleDownload = () => {
+    onDownload()
+    analytics.trackCalendarAction('downloaded', {
+      eventCount: events.length,
+      backgroundTheme: getCurrentBackground().name,
+      isDropShadowVisible: calendarSettings.showShadow ?? false,
+      isTodaysDateVisible: calendarSettings.showToday ?? false
+    })
   }
 
   return (
@@ -198,7 +226,7 @@ export default function Toolbar({ onDownload, onCopy, calendarRef }: ToolbarProp
         {/* Action buttons */}
         <div className="flex items-center gap-2">
           <button
-            onClick={onCopy}
+            onClick={handleCopy}
             className="p-2.5 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-all"
             aria-label="Copy to clipboard"
           >
@@ -206,7 +234,7 @@ export default function Toolbar({ onDownload, onCopy, calendarRef }: ToolbarProp
           </button>
 
           <button
-            onClick={onDownload}
+            onClick={handleDownload}
             className="p-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all"
             aria-label="Download image"
           >

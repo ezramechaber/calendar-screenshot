@@ -5,6 +5,7 @@ import { createContext, useContext, useState, ReactNode } from 'react'
 import { Event } from '@/types'
 import { startOfDay } from 'date-fns'
 import { getEventColor } from '@/utils/colors'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 interface CalendarSettings {
   showToday?: boolean
@@ -53,33 +54,45 @@ export function CalendarProvider({ children }: { children: ReactNode }): React.R
   })
   const [isQuickCreating, setIsQuickCreating] = useState(false)
   const [quickCreateDate, setQuickCreateDate] = useState<Date | null>(null)
+  const analytics = useAnalytics()
 
   const addEvent = (event: Event) => {
     const newEvent: Event = {
       ...event,
       startDate: new Date(event.startDate),
       endDate: new Date(event.endDate),
-      color: event.color ?? null  // Handle undefined case
+      color: event.color ?? null
     }
     setEvents(prev => [...prev, newEvent])
+    analytics.trackEventCreated(newEvent)
   }
 
   const updateEvent = (id: string, eventData: Partial<Event>) => {
-    setEvents(prev => prev.map(event => 
-      event.id === id 
-        ? { 
-            ...event, 
-            ...eventData,
-            startDate: new Date(eventData.startDate || event.startDate),
-            endDate: new Date(eventData.endDate || event.endDate),
-            color: (eventData.color ?? event.color) ?? null  // Handle undefined cases
-          } 
-        : event
-    ))
+    setEvents(prev => {
+      const oldEvent = prev.find(e => e.id === id)
+      if (!oldEvent) return prev
+      
+      const newEvent = { 
+        ...oldEvent, 
+        ...eventData,
+        startDate: new Date(eventData.startDate || oldEvent.startDate),
+        endDate: new Date(eventData.endDate || oldEvent.endDate),
+        color: (eventData.color ?? oldEvent.color) ?? null
+      }
+      
+      analytics.trackEventModified(oldEvent, newEvent)
+      return prev.map(event => event.id === id ? newEvent : event)
+    })
   }
 
-  const deleteEvent = (id: string) => {
-    setEvents(prev => prev.filter(event => event.id !== id))
+  const deleteEvent = (id: string, method: 'x_button' | 'dialog' = 'dialog') => {
+    setEvents(prev => {
+      const event = prev.find(e => e.id === id)
+      if (event) {
+        analytics.trackEventDeleted(event, method)
+      }
+      return prev.filter(event => event.id !== id)
+    })
   }
 
   const updateSettings = (newSettings: Partial<CalendarSettings>) => {
