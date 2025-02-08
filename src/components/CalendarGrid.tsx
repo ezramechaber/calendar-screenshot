@@ -496,7 +496,7 @@ export default function CalendarGrid(): React.ReactElement {
     const currentDate = startOfDay(new Date(date))
 
       const dayOfWeek = date.getDay()
-    
+      
     const isStart = startDate.getTime() === currentDate.getTime()
     const isEnd = endDate.getTime() === currentDate.getTime()
     const isMiddle = !isStart && !isEnd
@@ -576,8 +576,8 @@ export default function CalendarGrid(): React.ReactElement {
             )
             return Math.floor(dayNumber / 7) === weekIndex
           })()
-          
-          return (
+              
+              return (
           <div key={weekIndex} className="col-span-7 grid grid-cols-7 relative bg-gray-100">
               {/* Only show ghost preview in the correct week */}
               {resizeState.eventId && resizeState.startDate && 
